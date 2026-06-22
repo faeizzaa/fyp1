@@ -4,14 +4,12 @@ import time
 import secrets
 import json
 import os
-from datetime import datetime
+import threading
+from datetime import datetime, timedelta
 
 # ==========================================
 # 📁 SERVE STATIC FILES (HTML/JS/CSS)
 # ==========================================
-# By telling Flask where the frontend files live, we can serve everything
-# through a single port (8000) instead of needing VS Code Live Server on
-# 5500 at the same time. One ngrok tunnel covers everything.
 FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
@@ -19,7 +17,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/')
 def index():
-    return send_from_directory(FRONTEND_DIR, 'waitingroom.html')
+    return send_from_directory(FRONTEND_DIR, 'home.html')
 
 @app.route('/<path:filename>')
 def serve_static(filename):
@@ -33,11 +31,6 @@ sessions = {}
 # ==========================================
 # 💾 PERSISTENT EVALUATION LOG
 # ==========================================
-# evaluation_logs used to be a plain in-memory list, which meant any server
-# restart (manual, or Flask's own debug auto-reloader) silently wiped the
-# whole history. It's now backed by a small JSON file next to this script,
-# loaded on startup and re-saved after every evaluation, so the log survives
-# restarts.
 LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'evaluation_logs.json')
 
 def load_logs():
@@ -56,15 +49,12 @@ def save_logs():
     except Exception as e:
         print(f"⚠️  Could not save evaluation logs: {e}")
 
-evaluation_logs = load_logs()  # Stores all evaluation results for monitoring
+evaluation_logs = load_logs()
 
 # ==========================================
 # ⏱️ SYSTEM-SYNCHRONIZED MASTER CLOCK
 # ==========================================
-# How many seconds from Flask startup until the sale goes live.
-# Change this one number to adjust the countdown for your demo.
-SALE_COUNTDOWN_SECONDS = 120   # 2 minutes
-
+SALE_COUNTDOWN_SECONDS = 120
 TARGET_DROP_TIME = time.time() + SALE_COUNTDOWN_SECONDS
 
 # ==========================================
@@ -97,7 +87,6 @@ class PrefixTree:
 
 bot_tree = PrefixTree()
 
-# Original hand-picked seed patterns
 SEED_PATTERNS = ["HADSQSC", "HADSSQC", "HADSSSQC", "HADSQQQC"]
 for p in SEED_PATTERNS:
     bot_tree.insert(p)
@@ -105,11 +94,6 @@ for p in SEED_PATTERNS:
 # ==========================================
 # 🧠 SELF-LEARNING PATTERN BLACKLIST
 # ==========================================
-# Whenever a session is confidently scored as Tier 3 (ghost ticket - the
-# highest-confidence bot tier), its exact action-string pattern gets added
-# here, persisted to disk, and inserted into the trie above. From then on,
-# ANY future session producing that same pattern gets the trie's pattern-
-# match bonus too, even if nobody hand-typed that pattern in advance.
 PATTERNS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'learned_patterns.json')
 
 def load_learned_patterns():
@@ -131,6 +115,150 @@ def save_learned_patterns():
 learned_patterns = load_learned_patterns()
 for p in learned_patterns:
     bot_tree.insert(p)
+
+# ==========================================
+# 🪑 SEAT MANAGEMENT
+# ==========================================
+HOLD_MINUTES = 10
+
+def init_seats():
+    seats = {}
+    zones = {
+        "rock": {"rows": 5, "cols": 10, "price": 599},
+        "cat1": {"rows": 5, "cols": 10, "price": 488},
+        "cat2": {"rows": 5, "cols": 10, "price": 388},
+        "cat3": {"rows": 5, "cols": 10, "price": 288},
+    }
+    row_labels = ["A", "B", "C", "D", "E"]
+    for zone, cfg in zones.items():
+        seats[zone] = {}
+        for r in range(cfg["rows"]):
+            for c in range(1, cfg["cols"] + 1):
+                seat_id = f"{row_labels[r]}{c}"
+                seats[zone][seat_id] = {
+                    "status": "available",
+                    "reserved_at": None,
+                    "session_id": None
+                }
+    return seats
+
+seat_store = init_seats()
+seat_lock = threading.Lock()
+
+def release_expired_holds():
+    """Background worker — releases seats held longer than HOLD_MINUTES."""
+    while True:
+        time.sleep(30)
+        now = datetime.utcnow()
+        with seat_lock:
+            for zone in seat_store:
+                for seat_id, seat in seat_store[zone].items():
+                    if seat["status"] == "reserved" and seat["reserved_at"]:
+                        held_since = datetime.fromisoformat(seat["reserved_at"])
+                        if now - held_since > timedelta(minutes=HOLD_MINUTES):
+                            seat["status"] = "available"
+                            seat["reserved_at"] = None
+                            seat["session_id"] = None
+                            print(f"[Seat] Auto-released: {zone}/{seat_id}")
+
+# Start background seat release worker
+worker = threading.Thread(target=release_expired_holds, daemon=True)
+worker.start()
+
+@app.route('/seats/<zone>', methods=['GET'])
+def get_seats(zone):
+    """Return all seats for a zone — buyer view (reserved+sold both show as unavailable)."""
+    with seat_lock:
+        zone_data = seat_store.get(zone)
+        if not zone_data:
+            return jsonify({"error": "Zone not found"}), 404
+        buyer_view = {}
+        for seat_id, seat in zone_data.items():
+            buyer_view[seat_id] = "available" if seat["status"] == "available" else "unavailable"
+    response = make_response(jsonify({"zone": zone, "seats": buyer_view}))
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+@app.route('/seats/<zone>/reserve', methods=['POST'])
+def reserve_seat(zone):
+    """Reserve a seat (put on hold) for a session."""
+    data = request.get_json() or {}
+    seat_id = data.get("seat_id")
+    session_id = data.get("session_id")
+
+    if not seat_id or not session_id:
+        return jsonify({"error": "seat_id and session_id required"}), 400
+
+    with seat_lock:
+        zone_data = seat_store.get(zone)
+        if not zone_data or seat_id not in zone_data:
+            return jsonify({"error": "Seat not found"}), 404
+        seat = zone_data[seat_id]
+        if seat["status"] != "available":
+            return jsonify({"success": False, "reason": "Seat already taken"}), 409
+        seat["status"] = "reserved"
+        seat["reserved_at"] = datetime.utcnow().isoformat()
+        seat["session_id"] = session_id
+
+    print(f"[Seat] Reserved: {zone}/{seat_id} by session {session_id[:12]}")
+    response = make_response(jsonify({"success": True, "seat_id": seat_id, "zone": zone}))
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+@app.route('/seats/<zone>/confirm', methods=['POST'])
+def confirm_seat(zone):
+    """Mark seat as sold after successful payment."""
+    data = request.get_json() or {}
+    seat_id = data.get("seat_id")
+    session_id = data.get("session_id")
+
+    with seat_lock:
+        zone_data = seat_store.get(zone)
+        if not zone_data or seat_id not in zone_data:
+            return jsonify({"error": "Seat not found"}), 404
+        seat = zone_data[seat_id]
+        if seat["session_id"] != session_id:
+            return jsonify({"error": "Session mismatch"}), 403
+        seat["status"] = "sold"
+        seat["reserved_at"] = None
+
+    print(f"[Seat] Sold: {zone}/{seat_id}")
+    response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "sold"}))
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+@app.route('/seats/<zone>/release', methods=['POST'])
+def release_seat(zone):
+    """Manually release a reserved seat (user abandoned cart)."""
+    data = request.get_json() or {}
+    seat_id = data.get("seat_id")
+    session_id = data.get("session_id")
+
+    with seat_lock:
+        zone_data = seat_store.get(zone)
+        if not zone_data or seat_id not in zone_data:
+            return jsonify({"error": "Seat not found"}), 404
+        seat = zone_data[seat_id]
+        if seat["session_id"] != session_id:
+            return jsonify({"error": "Session mismatch"}), 403
+        if seat["status"] == "reserved":
+            seat["status"] = "available"
+            seat["reserved_at"] = None
+            seat["session_id"] = None
+
+    print(f"[Seat] Released: {zone}/{seat_id}")
+    response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "available"}))
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    return response
+
+@app.route('/seats/admin/<zone>', methods=['GET'])
+def admin_seats(zone):
+    """Admin view — shows real status (available/reserved/sold) with timestamps."""
+    with seat_lock:
+        zone_data = seat_store.get(zone)
+        if not zone_data:
+            return jsonify({"error": "Zone not found"}), 404
+        return jsonify({"zone": zone, "seats": dict(zone_data)})
 
 # ==========================================
 # 📊 MONITORING DASHBOARD
@@ -354,7 +482,6 @@ DASHBOARD_HTML = """
     </table>
     
     <script>
-        // Auto-refresh every 5 seconds
         setTimeout(() => location.reload(), 5000);
     </script>
 </body>
@@ -363,9 +490,6 @@ DASHBOARD_HTML = """
 
 @app.route('/monitor')
 def monitor_dashboard():
-    """Visual dashboard to monitor all sessions and detections."""
-    
-    # Calculate statistics
     stats = {'clean': 0, 'tier1': 0, 'tier2': 0, 'tier3': 0}
     for log in evaluation_logs:
         if log['tier'] == 0:
@@ -376,8 +500,7 @@ def monitor_dashboard():
             stats['tier2'] += 1
         elif log['tier'] == 3:
             stats['tier3'] += 1
-    
-    # Prepare active sessions with age
+
     active_sessions = {}
     current_time = time.time()
     for sid, session in sessions.items():
@@ -385,13 +508,13 @@ def monitor_dashboard():
             **session,
             'age': current_time - session['start_time']
         }
-    
+
     return render_template_string(
         DASHBOARD_HTML,
         stats=stats,
         active_sessions=active_sessions,
         active_count=len(sessions),
-        logs=list(reversed(evaluation_logs[-50:]))  # Last 50, newest first
+        logs=list(reversed(evaluation_logs[-50:]))
     )
 
 
@@ -403,17 +526,10 @@ def monitor_dashboard():
 def sale_status():
     current_system_time = time.time()
     remaining_seconds = int(TARGET_DROP_TIME - current_system_time)
-    
     if remaining_seconds < 0:
         remaining_seconds = 0
-        
     is_live = (remaining_seconds <= 0)
-    
-    data = {
-        "countdown": remaining_seconds,
-        "isSaleLive": is_live
-    }
-    
+    data = {"countdown": remaining_seconds, "isSaleLive": is_live}
     response = make_response(jsonify(data))
     response.headers["ngrok-skip-browser-warning"] = "true"
     response.headers["Access-Control-Allow-Headers"] = "ngrok-skip-browser-warning, Content-Type"
@@ -422,9 +538,7 @@ def sale_status():
 
 @app.route('/api/init-session', methods=['POST'])
 def init_session():
-    """Create a new session when user enters the site."""
     session_id = secrets.token_urlsafe(24)
-    
     sessions[session_id] = {
         'start_time': time.time(),
         'actions': [],
@@ -435,51 +549,41 @@ def init_session():
         'quantity': 1,
         'pages_visited': []
     }
-    
     print(f"\n[+] New session created: {session_id[:16]}...")
-    
-    response = make_response(jsonify({
-        'session_id': session_id,
-        'status': 'initialized'
-    }))
+    response = make_response(jsonify({'session_id': session_id, 'status': 'initialized'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
 
 
 @app.route('/api/track-action', methods=['POST'])
 def track_action():
-    """Track each user action server-side."""
     data = request.get_json() or {}
     session_id = data.get('session_id')
     action = data.get('action', '')
-    
+
     if not session_id or session_id not in sessions:
         response = make_response(jsonify({'error': 'Invalid session'}), 400)
         response.headers["ngrok-skip-browser-warning"] = "true"
         return response
-    
+
     session = sessions[session_id]
     elapsed = time.time() - session['start_time']
-    
-    # Record the action
+
     if action:
         session['actions'].append(action)
         session['timestamps'].append(elapsed)
-    
-    # Update other tracked data
+
     if 'mouse_movements' in data:
         session['mouse_movements'] = data['mouse_movements']
-    
     if 'quantity' in data:
         session['quantity'] = int(data['quantity'])
-    
     if 'page' in data:
         page = data['page']
         if page and page not in session['pages_visited']:
             session['pages_visited'].append(page)
-    
+
     print(f"[Session {session_id[:12]}] Action: {action:12} | Pattern: {''.join(session['actions']):20} | Mouse: {session['mouse_movements']}")
-    
+
     response = make_response(jsonify({'status': 'tracked'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -487,26 +591,22 @@ def track_action():
 
 @app.route('/api/captcha-verified', methods=['POST'])
 def captcha_verified():
-    """Log successful CAPTCHA verification."""
     data = request.get_json() or {}
-    
     session_id = data.get('session_id', 'unknown')
     method = data.get('method', 'unknown')
     proof = data.get('proof', {})
-    
+
     print("\n" + "=" * 50)
     print("✅ CAPTCHA VERIFICATION SUCCESS")
     print("=" * 50)
     print(f"   Session: {session_id[:16]}...")
     print(f"   Method:  {method}")
-    
     if method == 'pow':
         print(f"   Nonce:   {proof.get('nonce', 'N/A')}")
         print(f"   Hash:    {proof.get('hash', 'N/A')[:20]}...")
         print(f"   Time:    {proof.get('time', 'N/A')}s")
-    
     print("=" * 50 + "\n")
-    
+
     response = make_response(jsonify({'status': 'verified'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -514,10 +614,8 @@ def captcha_verified():
 
 @app.route('/detect', methods=['POST'])
 def detect_agent():
-    """Legacy telemetry endpoint for backwards compatibility."""
     data = request.get_json() or {}
     print(f"\n[Telemetry] {data}")
-    
     response = make_response(jsonify({"status": "captured"}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -525,14 +623,11 @@ def detect_agent():
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate_session():
-    """Evaluate a session for bot-like behavior."""
     data = request.get_json() or {}
     session_id = data.get('session_id')
     force_tier = data.get('force_tier')
-    
-    # Fallback for old client-side approach (backwards compatibility)
+
     if not session_id or session_id not in sessions:
-        # Use client-provided data as fallback
         pattern = data.get('pattern', '')
         duration = data.get('duration', 0)
         quantity = int(data.get('quantity', 1))
@@ -540,14 +635,13 @@ def evaluate_session():
         mouse_movements = data.get('mouse_movements', 0)
         session_id = 'LEGACY-' + secrets.token_urlsafe(8)
     else:
-        # Use server-side tracked data (trusted)
         session = sessions[session_id]
         pattern = ''.join(session['actions'])
         duration = (time.time() - session['start_time']) * 1000
         quantity = session['quantity']
         mouse_movements = session['mouse_movements']
         qty_speed = data.get('qty_speed', 9999)
-    
+
     print("\n" + "=" * 60)
     print("📊 EVALUATION REQUEST")
     print("=" * 60)
@@ -558,16 +652,7 @@ def evaluate_session():
     print(f"   Mouse Moves   : {mouse_movements}")
     print(f"   Qty Speed     : {qty_speed}ms")
     print("=" * 60)
-    
-    # ==========================================
-    # CLIENT-SIDE FAST-PATH SHORTCUT
-    # ==========================================
-    # confirm.html has its own instant "Tier 1" gate that fires before this
-    # endpoint is even reached, purely so the user/bot isn't kept waiting.
-    # It used to just alert() and return, which meant that detection never
-    # got logged here at all. Now it pings this endpoint with force_tier
-    # set, so the dashboard reflects it without re-running the full scorer
-    # (which could disagree with the tier the alert already showed).
+
     if force_tier is not None:
         tier = int(force_tier)
         score = {1: 30, 2: 60, 3: 100}.get(tier, 0)
@@ -592,106 +677,66 @@ def evaluate_session():
         if session_id in sessions:
             del sessions[session_id]
 
-        response = make_response(jsonify({
-            'score': score,
-            'tier': tier,
-            'reasons': reasons
-        }))
+        response = make_response(jsonify({'score': score, 'tier': tier, 'reasons': reasons}))
         response.headers["ngrok-skip-browser-warning"] = "true"
         return response
-    
+
     score = 0
     reasons = []
-    
-    # ==========================================
-    # TIER 1 DETECTION - SPEED
-    # ==========================================
+
     if pattern == "HADSQC" and quantity == 1 and duration < 15000:
         score += 30
         reasons.append("Elevated interaction speed")
-    
-    # ==========================================
-    # TIER 2 DETECTION - BULK PURCHASE
-    # ==========================================
-    # Only flag quantity = 5 (the absolute maximum per customer).
-    # Buying 4 tickets is still within normal range for a group purchase
-    # — flagging it with enough points to hit Tier 1 on its own was
-    # causing false positives for legitimate human buyers.
+
     if quantity == 5:
         score += 40
         reasons.append(f"Max quantity purchase: {quantity} tickets")
     elif quantity >= 4:
         score += 15
         reasons.append(f"High quantity purchase: {quantity} tickets")
-    
+
     if qty_speed < 500:
         score += 40
         reasons.append(f"Instant quantity selection ({qty_speed}ms)")
     elif qty_speed < 1500:
         score += 20
         reasons.append(f"Fast quantity selection ({qty_speed}ms)")
-    
-    # ==========================================
-    # TIER 3 DETECTION - PATTERN MATCHING
-    # ==========================================
+
     if bot_tree.search(pattern):
         score += 40
         reasons.append(f"Known bot pattern: {pattern}")
-    
-    # ==========================================
-    # MOUSE MOVEMENT ANALYSIS
-    # ==========================================
+
     if mouse_movements == 0:
         score += 35
         reasons.append("Zero mouse movement detected")
     elif mouse_movements < 10:
         score += 15
         reasons.append(f"Minimal mouse activity ({mouse_movements})")
-    
-    # ==========================================
-    # TIMING ANALYSIS
-    # ==========================================
-    # A motivated human can realistically complete checkout in 10-15s.
-    # Only flag under 8s as impossible, and under 12s as abnormal.
+
     if duration < 8000:
         score += 20
         reasons.append(f"Impossible speed ({duration:.0f}ms)")
     elif duration < 12000:
         score += 15
         reasons.append(f"Abnormally fast ({duration:.0f}ms)")
-    
-    # ==========================================
-    # HONEYPOT CHECK
-    # ==========================================
+
     if "ghost_ticket" in pattern.lower():
         score += 100
         reasons.append("Honeypot triggered")
-    
-    # ==========================================
-    # QUEUE BYPASS DETECTION
-    # ==========================================
-    # 'X' is stamped into the pattern by select.html when the sale_verified
-    # session token is missing — meaning the user jumped straight to
-    # select.html without clearing the waiting room or the salelive gate.
-    # Bots that bypass the queue entirely always trigger this.
+
     if 'X' in pattern:
         score += 50
         reasons.append("Queue gate bypassed (skipped waiting room)")
-    
-    # ==========================================
-    # DETERMINE RESPONSE TIER
-    # ==========================================
+
     if score >= 100:
         tier = 3
         print("🚫 TIER 3: Redirecting to ghost ticket")
-
         if pattern and not bot_tree.search(pattern):
             bot_tree.insert(pattern)
             if pattern not in learned_patterns:
                 learned_patterns.append(pattern)
                 save_learned_patterns()
                 print(f"🧠 LEARNED NEW PATTERN: '{pattern}' added to the bot-pattern blacklist")
-
     elif score >= 60:
         tier = 2
         print("🔒 TIER 2: CAPTCHA required")
@@ -703,13 +748,12 @@ def evaluate_session():
         tier = 0
         reasons.append("No suspicious activity")
         print("✅ TIER 0: Clean session")
-    
+
     print(f"\n   Final Score: {score}")
     print(f"   Tier: {tier}")
     print(f"   Reasons: {reasons}")
     print("=" * 60 + "\n")
-    
-    # Log this evaluation for monitoring
+
     evaluation_logs.append({
         'time': datetime.now().strftime('%H:%M:%S'),
         'session_id': session_id,
@@ -722,16 +766,11 @@ def evaluate_session():
         'reasons': reasons
     })
     save_logs()
-    
-    # Clean up session after evaluation
+
     if session_id in sessions:
         del sessions[session_id]
-    
-    response = make_response(jsonify({
-        'score': score,
-        'tier': tier,
-        'reasons': reasons
-    }))
+
+    response = make_response(jsonify({'score': score, 'tier': tier, 'reasons': reasons}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
 
@@ -743,11 +782,11 @@ if __name__ == '__main__':
     print("\n" + "=" * 60)
     print("🛡️  BOT DETECTION SERVER STARTING")
     print("=" * 60)
-    print(f"   API Server    : [localhost](http://localhost:8000)")
-    print(f"   Monitor       : [localhost](http://localhost:8000/monitor)")
+    print(f"   API Server    : http://localhost:8000")
+    print(f"   Monitor       : http://localhost:8000/monitor")
     print(f"   Restored      : {len(evaluation_logs)} saved evaluation(s) from {LOG_FILE}")
     print(f"   Learned       : {len(learned_patterns)} self-learned pattern(s) from {PATTERNS_FILE}")
     print("=" * 60 + "\n")
-    
+
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

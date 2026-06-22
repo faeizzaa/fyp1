@@ -1,7 +1,7 @@
 import time
 import os
 import shutil
-import  traceback
+import traceback
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -10,176 +10,106 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
+# Bot 2 — Tier 2 trigger
+# Behaviour: Picks seat then overrides qty to 5, no mouse moves
+# Expected pattern: HADSQC → Tier 2 (CAPTCHA)
+
 def run_single_bot(target_url, screen_position):
-    print(f"[Bot] Window staging initialized...")
-    
+    print(f"[Bot2] Window staging initialized...")
+
     chrome_options = Options()
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    profile_dir = os.path.join(base_dir, "chrome_sandbox_profile_single")
-    
-    # Targets the standard Google Chrome installation path
+    profile_dir = os.path.join(base_dir, "chrome_sandbox_profile_bot2")
+
     chrome_options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-    
+
     if os.path.exists(profile_dir):
-        try:
-            shutil.rmtree(profile_dir, ignore_errors=True)
-        except Exception:
-            pass
-            
+        shutil.rmtree(profile_dir, ignore_errors=True)
+
     chrome_options.add_argument(f"--user-data-dir={profile_dir}")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--remote-debugging-port=9221")
+    chrome_options.add_argument("--remote-debugging-port=9222")
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-background-timer-throttling")
     chrome_options.add_argument("--disable-features=CalculateNativeWinOcclusion")
-    
 
     try:
         driver = webdriver.Chrome(options=chrome_options)
-    except Exception as init_err:
-        print(f"❌ [Bot] Driver Crash: {init_err}")
+    except Exception as e:
+        print(f"[Bot2] Driver Crash: {e}")
         return
-    
+
     x_pos, y_pos, width, height = screen_position
     driver.set_window_position(x_pos, y_pos)
     driver.set_window_size(width, height)
-    
+
     try:
         # =========================
         # PHASE 1 - WAITING ROOM
         # =========================
-
         driver.get(target_url)
-
-        print("[Bot] Target Hit: Synchronizing with active live drop pool timer...")
-
-        WebDriverWait(driver, 15).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-
-        print("[Bot] Waiting for sale to become live...")
-
-        print("[Bot] Waiting room bypass active.")
-
-        driver.get("http://127.0.0.1:5500/home.html")
-
-        print("[Bot] Queue gate bypassed successfully.")
+        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+        print("[Bot2] Waiting room bypass active.")
+        driver.get("https://tickago.onrender.com/home.html")
+        print("[Bot2] Queue gate bypassed.")
 
         # =========================
         # PHASE 2 - HOME PAGE
         # =========================
-
-        print("[Bot] Arrived at home page...")
-        print("Current URL:", driver.current_url)
-        print("Page title:", driver.title)  
-
         time.sleep(2)
-
-        driver.execute_script("""
-        selectEvent('Stray Kids World Tour KARMA');
-        """)
-
-        WebDriverWait(driver, 10).until(
-            EC.url_contains("select.html")
-        )
-
-        print("[Bot] Event selected.")
+        driver.execute_script("selectEvent('Stray Kids World Tour KARMA');")
+        WebDriverWait(driver, 10).until(EC.url_contains("select.html"))
+        print("[Bot2] Event selected.")
 
         # =========================
-        # PHASE 3 - SEAT SELECTION
+        # PHASE 3 - ZONE + SEAT SELECTION
         # =========================
-
-        print("[Bot] Processing seating assignment map...")
-
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "date1-card"))
-        )
-
-        driver.execute_script("""
-        chooseDate(
-            '12 Dec 2026 (Day 1 - Saturday)',
-            'date1'
-            );
-        """)
-
-        time.sleep(1)
-
-        driver.execute_script("""
-            chooseSeat(
-                'Rock Zone (Standing) - RM 599',
-                'tier1-card'
-            );
-        """)
-
-        print("[Bot] Seat selected.")
-
-        # Deliberate pause so qty_speed lands consistently above the 1500ms
-        # "no speed bonus" cutoff server-side. With no delay here at all,
-        # this gap is almost always under 1500ms by pure chromedriver
-        # round-trip timing, which adds +20/+40 to the score and tips the
-        # total from Tier 2 into Tier 3 unpredictably.
-        time.sleep(1.8)
-
-        driver.execute_script("""
-            localStorage.setItem('selected_qty', '5');
-            updateQuantity('5');
-        """)
-
-        print("[Bot] Quantity override injected (5 tickets).")
-
-        time.sleep(1)
-        
-        driver.execute_script("""
-            goNext();
-        """)
+        WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "btn-rock")))
+        driver.execute_script("document.getElementById('btn-rock').click();")
+        time.sleep(1.5)
 
         WebDriverWait(driver, 10).until(
-            EC.url_contains("confirm.html")
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".seat.available"))
         )
 
-        print("[Bot] Proceeded to confirmation.")
+        print("[Bot2] Picking seat A1...")
+        driver.execute_script("""
+            const seat = document.querySelector('.seat[data-sid="A1"]');
+            if (seat && seat.classList.contains('available')) seat.click();
+        """)
+
+        time.sleep(1.8)  # deliberate pause so qty_speed > 1500ms
+
+        # Override qty to 5 (bulk purchase signal)
+        driver.execute_script("localStorage.setItem('selected_qty', '5');")
+        print("[Bot2] Quantity override injected (5 tickets).")
+
+        time.sleep(1)
+        driver.execute_script("goNext();")
+
+        WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
+        print("[Bot2] Proceeded to confirmation.")
 
         # =========================
         # PHASE 4 - CONFIRM PAGE
         # =========================
-
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "fullname"))
-        )
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
 
         driver.execute_script("""
-        document.getElementById('fullname').value =
-        'asdfghjk';
-
-        document.getElementById('email').value =
-        'asdfghjk@botnet.com';
+            document.getElementById('fullname').value = 'asdfghjk';
+            document.getElementById('email').value = 'asdfghjk@botnet.com';
         """)
 
-        pattern = driver.execute_script(
-            "return localStorage.getItem('fyp_pattern');"
-        )
-
-        print(
-            "Pattern:", pattern
-        )
-
-        print(
-            "Mouse Moves:",
-            driver.execute_script(
-                "return localStorage.getItem('fyp_mouse_moves') || '0';"
-            )
-        )
+        pattern = driver.execute_script("return localStorage.getItem('fyp_pattern');")
+        print(f"[Bot2] Pattern: {pattern}")
+        print("[Bot2] Mouse Moves:", driver.execute_script("return localStorage.getItem('fyp_mouse_moves') || '0';"))
 
         buttons = driver.find_elements(By.TAG_NAME, "button")
-
         for btn in buttons:
             if "Proceed to Payment" in btn.text:
-                driver.execute_script(
-                    "arguments[0].click();",
-                    btn
-                )
+                driver.execute_script("arguments[0].click();", btn)
                 break
 
         time.sleep(3)
@@ -187,164 +117,95 @@ def run_single_bot(target_url, screen_position):
         # =========================
         # DECISION ENGINE CHECK
         # =========================
-
         try:
-
-            WebDriverWait(driver, 3).until(
-                EC.alert_is_present()
-            )
-
+            WebDriverWait(driver, 5).until(EC.alert_is_present())
             alert = driver.switch_to.alert
-
             alert_text = alert.text
-
-            print("Security Alert:", alert_text)
+            print(f"Security Alert: {alert_text}")
 
             if "Tier 3" in alert_text:
-
                 print("\n==================================================")
                 print("TIER 3 DETECTION SUCCESS")
-                print("High-confidence automated behaviour.")
                 print(f"Action String: {pattern}")
-                print("Quantity: 5 tickets")
                 print("Response: Ghost Ticket")
                 print("==================================================")
-
-                time.sleep(2)  # let the alert be visible on screen
-
-                try:
-                    alert.accept()
-                except Exception as accept_err:
-                    print(f"⚠️  Could not dismiss alert: {accept_err}")
-
-                # Explicitly navigate to the landing page rather than waiting
-                # for the JS redirect to fire - more reliable in Selenium context
-                time.sleep(1)
-                driver.get("http://127.0.0.1:5500/ghost_ticket.html")
-                print("[Bot] Navigated to Ghost Ticket page - interception confirmed.")
-
-                time.sleep(4)  # hold so the page is clearly visible in demo
-                return
-
-            if "Tier 2" in alert_text:
-
-                print("\n==================================================")
-                print("TIER 2 DETECTION SUCCESS")
-                print("CAPTCHA verification required.")
-                print(f"Action String: {pattern}")
-                print("Quantity: 5 tickets")
-                print("Response: CAPTCHA Challenge")
-                print("==================================================")
-
                 time.sleep(2)
-
-                try:
-                    alert.accept()
-                except Exception as accept_err:
-                    print(f"⚠️  Could not dismiss alert: {accept_err}")
-
+                try: alert.accept()
+                except Exception: pass
                 time.sleep(1)
-                driver.get("http://127.0.0.1:5500/captcha.html")
-                print("[Bot] Navigated to CAPTCHA page - interception confirmed.")
-
+                driver.get("https://tickago.onrender.com/ghost_ticket.html")
+                print("[Bot2] Navigated to Ghost Ticket page.")
                 time.sleep(4)
                 return
 
-            # Unrecognized alert text - acknowledge and stop rather than fall through
-            try:
-                alert.accept()
-            except Exception:
-                pass
+            if "Tier 2" in alert_text:
+                print("\n==================================================")
+                print("TIER 2 DETECTION SUCCESS")
+                print(f"Action String: {pattern}")
+                print("Response: CAPTCHA Challenge")
+                print("==================================================")
+                time.sleep(2)
+                try: alert.accept()
+                except Exception: pass
+                time.sleep(1)
+                driver.get("https://tickago.onrender.com/captcha.html")
+                print("[Bot2] Navigated to CAPTCHA page.")
+                time.sleep(4)
+                return
+
+            try: alert.accept()
+            except Exception: pass
             return
 
         except TimeoutException:
-            # No alert appeared at all - normal for a clean run
             pass
-        except Exception as alert_err:
-            print(f"⚠️  Alert handling error: {alert_err}")
+        except Exception as e:
+            print(f"Alert handling error: {e}")
 
         current_url = driver.current_url
-
         if "captcha.html" in current_url:
-            print("⚠️ Tier 2 triggered (CAPTCHA)")
+            print("Tier 2 triggered (CAPTCHA)")
             return
-
         if "ghost_ticket.html" in current_url:
-            print("🛡️ Tier 3 triggered (Ghost Ticket)")
+            print("Tier 3 triggered (Ghost Ticket)")
             return
-
-        WebDriverWait(driver, 10).until(
-            EC.url_contains("payment.html")
-        )
-
-        print("[Bot] Payment page reached.")
 
         # =========================
         # PHASE 5 - PAYMENT
         # =========================
+        WebDriverWait(driver, 10).until(EC.url_contains("payment.html"))
+        print("[Bot2] Payment page reached.")
 
-        WebDriverWait(driver, 10).until(
-            EC.visibility_of_element_located((By.ID, "card-number"))
-        )
+        WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.ID, "card-number")))
+        driver.find_element(By.ID, "card-number").send_keys("4111222233334444")
+        driver.find_element(By.ID, "card-expiry").send_keys("1229")
+        driver.find_element(By.ID, "card-cvv").send_keys("123")
 
-        driver.find_element(
-            By.ID,
-            "card-number"
-        ).send_keys("4111222233334444")
-
-        driver.find_element(
-            By.ID,
-            "card-expiry"
-        ).send_keys("1229")
-
-        driver.find_element(
-            By.ID,
-            "card-cvv"
-        ).send_keys("123")
-
-        print("[Bot] Submitting payment payload...")
-
-        driver.execute_script("""
-            executeFinalTransaction();
-        """)
-
+        print("[Bot2] Submitting payment...")
+        driver.execute_script("executeFinalTransaction();")
         time.sleep(5)
 
-        landing_zone = driver.current_url
-
+        landing = driver.current_url
         print("\n==================================================")
-        print("🤖 BOT DEMO INTERCEPTION ANALYSIS")
-
-        if "ghost_ticket.html" in landing_zone:
-            print("• TIER 3 SUCCESS (Ghost Ticket Trap)")
-        elif "captcha.html" in landing_zone:
-            print("• TIER 2 SUCCESS (CAPTCHA Triggered)")
-        elif "success.html" in landing_zone:
-            print("• BOT REACHED SUCCESS PAGE")
-        else:
-            print(f"• FINAL LANDING: {landing_zone}")
-
+        print("BOT2 INTERCEPTION ANALYSIS")
+        if "ghost_ticket.html" in landing:   print("• TIER 3 (Ghost Ticket)")
+        elif "captcha.html" in landing:      print("• TIER 2 (CAPTCHA)")
+        elif "success.html" in landing:      print("• BOT REACHED SUCCESS PAGE")
+        else:                                print(f"• FINAL LANDING: {landing}")
         print("==================================================")
 
-    except Exception as e:
-        print(f"FULL ERROR:")
+    except Exception:
+        print("FULL ERROR:")
         traceback.print_exc()
-
     finally:
-        print("[Bot] Execution complete.")
+        print("[Bot2] Execution complete.")
         input("Press ENTER to close browser...")
         driver.quit()
 
+
 if __name__ == "__main__":
-    target = "http://127.0.0.1:5500/waitingroom.html" 
-    
+    target = "https://tickago.onrender.com/waitingroom.html"
     print("\n==================================================")
-    print("LAUNCHING SINGLE ISOLATED AUTOMATION AGENT")
-    print("🔥 DIRECT WAITING ROOM TARGETING ACTIVE")
+    print("BOT 2 — TIER 2 TRIGGER (Bulk qty override)")
     print("==================================================")
-    
-    window_width = 500 
-    window_height = 800
-    single_position = (10, 10, window_width, window_height)
-    
-    run_single_bot(target, single_position)
+    run_single_bot(target, (520, 10, 500, 800))

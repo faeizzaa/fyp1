@@ -1,278 +1,364 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket Hub - Choose Date & Seats</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <style>
-        .badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
-        .hidden-section { display: none; margin-top: 25px; border-top: 2px dashed #e0e0e0; padding-top: 20px; }
-        .active-card { border-color: #007bff !important; background-color: #f4f9ff !important; box-shadow: 0 2px 8px rgba(0,123,255,0.1); }
-        
-        /* Stylized Dropdown */
-        .qty-box { margin-top: 8px; display: none; align-items: center; gap: 10px; font-size: 0.9rem; }
-        .qty-select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tickago | Select Seats</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .venue-wrapper {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 32px 24px 24px;
+      margin-bottom: 28px;
+    }
+    .stage-label {
+      text-align: center;
+      background: linear-gradient(90deg, #e0a800, #f5c518);
+      color: #1a1a2e;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 3px;
+      padding: 7px 28px;
+      border-radius: 4px;
+      width: fit-content;
+      margin: 0 auto 24px;
+    }
+    .venue-map {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .zone-row { display: flex; gap: 10px; justify-content: center; }
+    .zone-btn {
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      color: white;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 0;
+    }
+    .zone-btn:hover { transform: scale(1.04); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    .zone-btn.active { outline: 3px solid #f5c518; outline-offset: 2px; transform: scale(1.04); }
+    .zone-btn .zn { font-size: 13px; font-weight: 700; }
+    .zone-btn .zp { font-size: 11px; opacity: 0.85; }
+    .zone-rock { background: #c0392b; width: 280px; height: 68px; }
+    .zone-cat1  { background: #8e44ad; width: 200px; height: 62px; }
+    .zone-cat2  { background: #2980b9; width: 260px; height: 62px; }
+    .zone-cat3  { background: #27ae60; width: 125px; height: 62px; }
+    .venue-legend {
+      display: flex; gap: 16px; justify-content: center;
+      margin-top: 16px; flex-wrap: wrap;
+    }
+    .vleg { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #aaa; }
+    .vdot { width: 11px; height: 11px; border-radius: 50%; }
+
+    /* Seat picker */
+    #seat-section { display: none; margin-top: 4px; }
+    .picker-header {
+      display: flex; align-items: center;
+      justify-content: space-between; margin-bottom: 14px;
+    }
+    .picker-header h3 { margin: 0; font-size: 15px; }
+    .back-btn {
+      background: none; border: 1px solid #dee2e6;
+      border-radius: 6px; padding: 5px 12px;
+      font-size: 12px; cursor: pointer; color: #495057;
+    }
+    .screen-bar {
+      background: linear-gradient(90deg,#555,#888,#555);
+      height: 5px; border-radius: 3px; margin-bottom: 5px; opacity: 0.5;
+    }
+    .screen-txt {
+      text-align: center; font-size: 11px;
+      color: #aaa; margin-bottom: 18px; letter-spacing: 2px;
+    }
+    .seat-grid { display: flex; flex-direction: column; gap: 7px; align-items: center; }
+    .seat-row { display: flex; align-items: center; gap: 5px; }
+    .row-lbl { width: 16px; font-size: 11px; font-weight: 600; color: #888; text-align: right; }
+    .seat {
+      width: 32px; height: 28px;
+      border-radius: 5px 5px 3px 3px;
+      border: none; cursor: pointer;
+      font-size: 9px; font-weight: 600;
+      transition: transform 0.1s, background 0.15s;
+    }
+    .seat.available  { background: #27ae60; color: white; }
+    .seat.available:hover { transform: scale(1.12); background: #2ecc71; }
+    .seat.unavailable { background: #adb5bd; color: #868e96; cursor: not-allowed; }
+    .seat.selected   { background: #f5c518; color: #1a1a2e; transform: scale(1.12); }
+    .seat-legend {
+      display: flex; gap: 18px; justify-content: center; margin-top: 18px;
+    }
+    .sl-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #555; }
+    .sl-swatch { width: 16px; height: 14px; border-radius: 3px 3px 2px 2px; }
+
+    /* Summary bar */
+    #summary-bar {
+      display: none;
+      background: #f8f9fa; border: 1px solid #dee2e6;
+      border-radius: 10px; padding: 14px 18px; margin-top: 16px;
+      align-items: center; justify-content: space-between; gap: 12px;
+    }
+    #summary-bar.visible { display: flex; }
+    .sum-info { font-size: 14px; }
+    .sum-info strong { display: block; font-size: 15px; }
+    .sum-price { font-size: 18px; font-weight: 700; color: #c0392b; }
+
+    .seat-loading { text-align: center; padding: 36px; color: #888; font-size: 14px; }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="stepper-wrapper">
-            <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
-            <div class="stepper-item active"><div class="step-counter">2</div><div class="step-name">Seats & Date</div></div>
-            <div class="stepper-item"><div class="step-counter">3</div><div class="step-name">Confirmation</div></div>
-        </div>
+<div class="container">
+  <div class="stepper-wrapper">
+    <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
+    <div class="stepper-item active"><div class="step-counter">2</div><div class="step-name">Seats & Date</div></div>
+    <div class="stepper-item"><div class="step-counter">3</div><div class="step-name">Confirmation</div></div>
+  </div>
 
-        <h1 id="event-title">Concert Booking</h1>
-        
-        <h2>1. Select a show date</h2>
-        <div class="date-list">
-            <div class="date-card" id="date1-card" onclick="chooseDate('12 Dec 2026 (Day 1 - Saturday)', 'date1')">
-                <div><strong>Day 1 (Saturday)</strong><br><small>12 Dec 2026 - 8:00 PM</small></div>
-                <span id="badge-date1" class="badge" style="display:none;">Selected</span>
-            </div>
-            <div class="date-card" id="date2-card" onclick="chooseDate('13 Dec 2026 (Day 2 - Sunday)', 'date2')">
-                <div><strong>Day 2 (Sunday)</strong><br><small>13 Dec 2026 - 8:00 PM</small></div>
-                <span id="badge-date2" class="badge" style="display:none;">Selected</span>
-            </div>
-        </div>
+  <h1 style="margin-bottom:4px">Pick Your Spot</h1>
+  <p style="color:#888;margin-bottom:20px;font-size:14px">
+    <strong id="ev-label"></strong>&nbsp;·&nbsp;<span id="dt-label"></span>
+  </p>
 
-        <div id="seat-section" class="hidden-section">
-            <h2>2. Choose your ticket option</h2>
-            <p>Available categories for <span id="chosen-context-text" style="font-weight: bold; color: #007bff;"></span> (Max 5 tickets per customer):</p>
-            <div class="event-list">
-                
-                <div class="ticket-option" id="tier1-card" onclick="chooseSeat('Rock Zone (Standing) - RM 599', 'tier1-card')">
-                    <div style="flex-grow: 1;">
-                        <span><strong>Rock Zone (Standing)</strong> - RM 599</span>
-                        <div class="qty-box" id="qty-box-1" onclick="event.stopPropagation();">
-                            <label>Quantity:</label>
-                            <select class="qty-select" id="select-qty-1" onchange="updateQuantity(this.value)">
-                                <option value="1">1 Ticket</option>
-                                <option value="2">2 Tickets</option>
-                                <option value="3">3 Tickets</option>
-                                <option value="4">4 Tickets</option>
-                                <option value="5">5 Tickets (MAX)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <span id="badge-tier1" class="badge" style="display:none;">Selected</span>
-                </div>
-
-                <div class="ticket-option" id="tier2-card" onclick="chooseSeat('VIP Box (Seated) - RM 499', 'tier2-card')">
-                    <div style="flex-grow: 1;">
-                        <span><strong>VIP Box (Seated)</strong> - RM 499</span>
-                        <div class="qty-box" id="qty-box-2" onclick="event.stopPropagation();">
-                            <label>Quantity:</label>
-                            <select class="qty-select" id="select-qty-2" onchange="updateQuantity(this.value)">
-                                <option value="1">1 Ticket</option>
-                                <option value="2">2 Tickets</option>
-                                <option value="3">3 Tickets</option>
-                                <option value="4">4 Tickets</option>
-                                <option value="5">5 Tickets (MAX)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <span id="badge-tier2" class="badge" style="display:none;">Selected</span>
-                </div>
-
-                <div class="ticket-option" id="tier3-card" onclick="chooseSeat('CAT 1 (General Seating) - RM 399', 'tier3-card')">
-                    <div style="flex-grow: 1;">
-                        <span><strong>CAT 1 (General Seating)</strong> - RM 399</span>
-                        <div class="qty-box" id="qty-box-3" onclick="event.stopPropagation();">
-                            <label>Quantity:</label>
-                            <select class="qty-select" id="select-qty-3" onchange="updateQuantity(this.value)">
-                                <option value="1">1 Ticket</option>
-                                <option value="2">2 Tickets</option>
-                                <option value="3">3 Tickets</option>
-                                <option value="4">4 Tickets</option>
-                                <option value="5">5 Tickets (MAX)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <span id="badge-tier3" class="badge" style="display:none;">Selected</span>
-                </div>
-
-                <div class="ticket-option" id="tier4-card" onclick="chooseSeat('CAT 2 (Standard Seating) - RM 299', 'tier4-card')">
-                    <div style="flex-grow: 1;">
-                        <span><strong>CAT 2 (Standard Seating)</strong> - RM 299</span>
-                        <div class="qty-box" id="qty-box-4" onclick="event.stopPropagation();">
-                            <label>Quantity:</label>
-                            <select class="qty-select" id="select-qty-4" onchange="updateQuantity(this.value)">
-                                <option value="1">1 Ticket</option>
-                                <option value="2">2 Tickets</option>
-                                <option value="3">3 Tickets</option>
-                                <option value="4">4 Tickets</option>
-                                <option value="5">5 Tickets (MAX)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <span id="badge-tier4" class="badge" style="display:none;">Selected</span>
-                </div>
-
-                <div class="ticket-option" id="tier5-card" onclick="chooseSeat('CAT 3 (Value Seating) - RM 199', 'tier5-card')">
-                    <div style="flex-grow: 1;">
-                        <span><strong>CAT 3 (Value Seating)</strong> - RM 199</span>
-                        <div class="qty-box" id="qty-box-5" onclick="event.stopPropagation();">
-                            <label>Quantity:</label>
-                            <select class="qty-select" id="select-qty-5" onchange="updateQuantity(this.value)">
-                                <option value="1">1 Ticket</option>
-                                <option value="2">2 Tickets</option>
-                                <option value="3">3 Tickets</option>
-                                <option value="4">4 Tickets</option>
-                                <option value="5">5 Tickets (MAX)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <span id="badge-tier5" class="badge" style="display:none;">Selected</span>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="nav-buttons">
-            
-            <button class="btn btn-secondary" onclick="goBackHome()">Back</button>
-            <button id="next-btn" class="btn btn-disabled" disabled onclick="goNext()">Next</button>
-        </div>
+  <!-- ZONE MAP -->
+  <div class="venue-wrapper">
+    <div class="stage-label">◀&nbsp;&nbsp;STAGE&nbsp;&nbsp;▶</div>
+    <div class="venue-map">
+      <div class="zone-row">
+        <button class="zone-btn zone-rock" id="btn-rock" onclick="selectZone('rock', this)">
+          <span class="zn">🔥 Rock Zone</span><span class="zp">RM 599 · Standing</span>
+        </button>
+      </div>
+      <div class="zone-row">
+        <button class="zone-btn zone-cat1" id="btn-cat1" onclick="selectZone('cat1', this)">
+          <span class="zn">Category 1</span><span class="zp">RM 488</span>
+        </button>
+      </div>
+      <div class="zone-row">
+        <button class="zone-btn zone-cat2" id="btn-cat2" onclick="selectZone('cat2', this)">
+          <span class="zn">Category 2</span><span class="zp">RM 388</span>
+        </button>
+      </div>
+      <div class="zone-row">
+        <button class="zone-btn zone-cat3" id="btn-cat3a" onclick="selectZone('cat3', this)">
+          <span class="zn">Cat 3</span><span class="zp">RM 288</span>
+        </button>
+        <button class="zone-btn zone-cat3" id="btn-cat3b" onclick="selectZone('cat3', this)">
+          <span class="zn">Cat 3</span><span class="zp">RM 288</span>
+        </button>
+      </div>
     </div>
+    <div class="venue-legend">
+      <div class="vleg"><div class="vdot" style="background:#c0392b"></div>Rock Zone</div>
+      <div class="vleg"><div class="vdot" style="background:#8e44ad"></div>Cat 1</div>
+      <div class="vleg"><div class="vdot" style="background:#2980b9"></div>Cat 2</div>
+      <div class="vleg"><div class="vdot" style="background:#27ae60"></div>Cat 3</div>
+    </div>
+  </div>
 
-    <script>
-        window.onload = function() {
-            document.getElementById('event-title').innerText = localStorage.getItem('selected_event') || "Concert Booking";
-            
-            // =============================================
-            // 🔐 SALE GATE VERIFICATION
-            // =============================================
-            // salelive.html sets 'sale_verified' in sessionStorage when a
-            // user legitimately clears the waiting room. If it's missing
-            // here, someone navigated straight to select.html, skipping
-            // both the waiting room and the salelive gate entirely — a
-            // classic bot bypass pattern. Mark it in the action string.
-            const saleVerified = sessionStorage.getItem('sale_verified');
-            if (!saleVerified) {
-                let pattern = localStorage.getItem('fyp_pattern') || '';
-                if (!pattern.includes('X')) {
-                    pattern += 'X'; // X = queue + sale gate bypassed
-                    localStorage.setItem('fyp_pattern', pattern);
-                }
-                console.warn('Sale gate not verified — possible bot bypass detected.');
-            } else {
-                // Consume it so refreshing select.html doesn't keep it alive
-                sessionStorage.removeItem('sale_verified');
-            }
+  <!-- SEAT PICKER -->
+  <div id="seat-section">
+    <div class="picker-header">
+      <h3 id="picker-title">Select a seat</h3>
+      <button class="back-btn" onclick="backToZones()">← Change zone</button>
+    </div>
+    <div class="screen-bar"></div>
+    <div class="screen-txt">STAGE</div>
+    <div id="seat-grid-wrap"><div class="seat-loading">Loading seats...</div></div>
+    <div class="seat-legend">
+      <div class="sl-item"><div class="sl-swatch" style="background:#27ae60"></div>Available</div>
+      <div class="sl-item"><div class="sl-swatch" style="background:#f5c518"></div>Your pick</div>
+      <div class="sl-item"><div class="sl-swatch" style="background:#adb5bd"></div>Unavailable</div>
+    </div>
+  </div>
 
-            if (!localStorage.getItem('session_start')) {
-                localStorage.setItem(
-                    'session_start',
-                Date.now()
-                );
-            }
+  <!-- SUMMARY BAR -->
+  <div id="summary-bar">
+    <div class="sum-info">
+      <strong id="sum-seat">—</strong>
+      <span id="sum-zone" style="color:#888;font-size:13px"></span>
+    </div>
+    <div class="sum-price" id="sum-price">RM —</div>
+    <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+  </div>
+</div>
 
-            // Baseline structural initialization logic tracking protection
-            let pattern = localStorage.getItem('fyp_pattern') || "";
-            if (!pattern.startsWith('H')) {
-                pattern = 'H' + pattern;
-            }
-            if (!pattern.includes('A')) {
-                pattern += 'A';
-            }
-            localStorage.setItem('fyp_pattern', pattern);
-        };
+<script src="config.js"></script>
+<script src="telemetry.js"></script>
+<script>
+  const ZONE_META = {
+    rock: { label: "Rock Zone (Standing)", price: 599 },
+    cat1: { label: "Category 1",           price: 488 },
+    cat2: { label: "Category 2",           price: 388 },
+    cat3: { label: "Category 3",           price: 288 },
+  };
+  const ROWS = ["A","B","C","D","E"];
+  const COLS = 10;
 
-        let seatSelectionTime = 0;
+  let activeZone = null;
+  let activeSeat = null;
+  let sessionId = localStorage.getItem("session_id") || crypto.randomUUID();
+  localStorage.setItem("session_id", sessionId);
 
-        function chooseDate(dateString, type) {
-            localStorage.setItem('selected_date', dateString);
+  window.onload = function() {
+    document.getElementById("ev-label").textContent = localStorage.getItem("selected_event") || "";
+    document.getElementById("dt-label").textContent  = localStorage.getItem("selected_date")  || "";
 
-            // Action String Tracking - D (Date Selection)
-            let pattern = localStorage.getItem('fyp_pattern') || "HA";
+    let pattern = localStorage.getItem("fyp_pattern") || "H";
+    if (!pattern.includes("A")) { pattern += "A"; localStorage.setItem("fyp_pattern", pattern); }
 
-            if (!pattern.includes('D')) {
-                pattern += 'D';
-                localStorage.setItem('fyp_pattern', pattern);
-            }
+    // Record qty speed start point
+    localStorage.setItem("qty_speed_start", Date.now());
+  };
 
-            document.getElementById('date1-card').className = 'date-card';
-            document.getElementById('date2-card').className = 'date-card';
-            document.getElementById('badge-date1').style.display = 'none';
-            document.getElementById('badge-date2').style.display = 'none';
+  function selectZone(zone, btn) {
+    // pattern tracking
+    let pattern = localStorage.getItem("fyp_pattern") || "HA";
+    if (!pattern.includes("D")) { pattern += "D"; }
+    localStorage.setItem("fyp_pattern", pattern);
 
-            if (type === 'date1') {
-                document.getElementById('date1-card').className = 'date-card active-card';
-                document.getElementById('badge-date1').style.display = 'block';
-            } else {
-                document.getElementById('date2-card').className = 'date-card active-card';
-                document.getElementById('badge-date2').style.display = 'block';
-            }
-            
-            document.getElementById('chosen-context-text').innerText = dateString;
-            document.getElementById('seat-section').style.display = 'block'; 
-        }
+    // highlight
+    document.querySelectorAll(".zone-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
 
-        function chooseSeat(seatDetails, cardId) {
-            localStorage.setItem('selected_seat', seatDetails);
-            seatSelectionTime = Date.now();
+    activeZone = zone;
+    activeSeat = null;
 
-            for(let i = 1; i <= 5; i++){
-                document.getElementById(`tier${i}-card`).className = 'ticket-option';
-                document.getElementById(`badge-tier${i}`).style.display = 'none';
-                document.getElementById(`qty-box-` + i).style.display = 'none';
-                document.getElementById(`select-qty-` + i).value = "1";
-            }
+    document.getElementById("seat-section").style.display = "block";
+    document.getElementById("picker-title").textContent =
+      ZONE_META[zone].label + " — RM " + ZONE_META[zone].price;
+    document.getElementById("summary-bar").classList.remove("visible");
 
-            document.getElementById(cardId).className = 'ticket-option active-card';
-            let tierNum = cardId.match(/\d+/)[0];
-            document.getElementById(`badge-tier${tierNum}`).style.display = 'block';
-            document.getElementById(`qty-box-` + tierNum).style.display = 'flex';
-            
-            localStorage.setItem('selected_qty', "1");
+    loadSeats(zone);
+    document.getElementById("seat-section").scrollIntoView({ behavior: "smooth" });
+  }
 
-           let pattern = localStorage.getItem('fyp_pattern') || "HAD";
-            //if (!pattern.includes('S')) {
-               // pattern += 'S';
-               // localStorage.setItem('fyp_pattern', pattern);
-            //}
+  function backToZones() {
+    if (activeSeat && activeZone) {
+      fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_id: activeSeat, session_id: sessionId })
+      }).catch(() => {});
+    }
+    document.getElementById("seat-section").style.display = "none";
+    document.getElementById("summary-bar").classList.remove("visible");
+    activeZone = null; activeSeat = null;
+  }
 
-            pattern += 'S';
-            localStorage.setItem('fyp_pattern', pattern);
-            // Tier 1 Early Detection
+  async function loadSeats(zone) {
+    const wrap = document.getElementById("seat-grid-wrap");
+    wrap.innerHTML = '<div class="seat-loading">Loading seats...</div>';
+    try {
+      const res  = await fetch(NGROK_URL + "/seats/" + zone);
+      const data = await res.json();
+      renderGrid(data.seats);
+    } catch(e) {
+      wrap.innerHTML = '<div class="seat-loading">Could not load seats. Check server.</div>';
+    }
+  }
 
+  function renderGrid(seatData) {
+    const wrap = document.getElementById("seat-grid-wrap");
+    const grid = document.createElement("div");
+    grid.className = "seat-grid";
 
-            const nextBtn = document.getElementById('next-btn');
-            nextBtn.disabled = false;
-            nextBtn.className = "btn btn-primary";
-        }
+    ROWS.forEach(row => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "seat-row";
 
-        function updateQuantity(qtyValue) {
-            localStorage.setItem('selected_qty', qtyValue);
-            
-            let delay = Date.now() - seatSelectionTime;
-            localStorage.setItem('qty_select_speed', delay);
+      const lbl = document.createElement("span");
+      lbl.className = "row-lbl";
+      lbl.textContent = row;
+      rowEl.appendChild(lbl);
 
-            let pattern = localStorage.getItem('fyp_pattern') || "HADS";
-            if (!pattern.includes('Q')) {
-                pattern += 'Q';
-                localStorage.setItem('fyp_pattern', pattern);
-            }
-        }
+      for (let c = 1; c <= COLS; c++) {
+        const sid  = row + c;
+        const status = seatData[sid] || "unavailable";
+        const btn  = document.createElement("button");
+        btn.className = "seat " + status;
+        btn.textContent = c;
+        btn.dataset.sid = sid;
+        btn.title = "Seat " + sid;
+        if (status === "available") btn.onclick = () => pickSeat(sid, btn);
+        else btn.disabled = true;
+        rowEl.appendChild(btn);
+      }
+      grid.appendChild(rowEl);
+    });
+    wrap.innerHTML = "";
+    wrap.appendChild(grid);
+  }
 
+  async function pickSeat(seatId, btn) {
+    // Release previous hold
+    if (activeSeat && activeSeat !== seatId) {
+      await fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_id: activeSeat, session_id: sessionId })
+      }).catch(() => {});
+      const prev = document.querySelector('.seat[data-sid="' + activeSeat + '"]');
+      if (prev) prev.className = "seat available";
+    }
 
-        function goNext() {
-             window.location.href = 'confirm.html';
-        }
+    // Reserve new seat
+    try {
+      const res  = await fetch(NGROK_URL + "/seats/" + activeZone + "/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+      });
+      const data = await res.json();
 
-        function goBackHome() {
-            let pattern = localStorage.getItem('fyp_pattern') || "";
-            pattern += "B";
-            localStorage.setItem('fyp_pattern', pattern);
-            window.location.href = 'home.html';
-        }
-        
-    </script>
-    
-    <script src="config.js"></script>
-    <script src="telemetry.js"></script>
+      if (!data.success) {
+        alert("That seat was just taken — please pick another.");
+        btn.className = "seat unavailable";
+        btn.disabled = true;
+        return;
+      }
+
+      activeSeat = seatId;
+      btn.className = "seat selected";
+
+      // Pattern tracking — S per seat pick, max 3
+      let pattern = localStorage.getItem("fyp_pattern") || "HAD";
+      let sCount  = (pattern.match(/S/g) || []).length;
+      if (sCount < 3) { pattern += "S"; localStorage.setItem("fyp_pattern", pattern); }
+
+      // Qty speed tracking
+      const qtyStart = parseInt(localStorage.getItem("qty_speed_start") || Date.now());
+      localStorage.setItem("qty_select_speed", Date.now() - qtyStart);
+
+      localStorage.setItem("selected_seat",    ZONE_META[activeZone].label + " - RM " + ZONE_META[activeZone].price);
+      localStorage.setItem("selected_seat_id", seatId);
+      localStorage.setItem("selected_zone",    activeZone);
+      localStorage.setItem("selected_qty",     "1");
+
+      document.getElementById("sum-seat").textContent  = "Seat " + seatId;
+      document.getElementById("sum-zone").textContent  = ZONE_META[activeZone].label;
+      document.getElementById("sum-price").textContent = "RM " + ZONE_META[activeZone].price;
+      document.getElementById("summary-bar").classList.add("visible");
+
+    } catch(e) {
+      alert("Could not reserve seat. Please try again.");
+    }
+  }
+
+  function goNext() {
+    if (!activeSeat) { alert("Please select a seat first."); return; }
+    let pattern = localStorage.getItem("fyp_pattern") || "HADSS";
+    if (!pattern.includes("Q")) { pattern += "Q"; localStorage.setItem("fyp_pattern", pattern); }
+    window.location.href = "confirm.html";
+  }
+</script>
 </body>
 </html>
