@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale is Live | Tickago</title>
+    <style>
+        :root {
+            --bg: #0f1115;
+            --card-bg: #181c24;
+            --accent-green: #2ecc71;
+            --accent-blue: #00f0ff;
+            --text-main: #ffffff;
+            --text-muted: #8b9bb4;
+            --border: rgba(255,255,255,0.07);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* ---- CONFETTI STRIP ---- */
+        .confetti-bar {
+            width: 100%;
+            max-width: 520px;
+            height: 6px;
+            border-radius: 3px 3px 0 0;
+            background: linear-gradient(90deg,
+                #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #ff6bcb, #ff6b6b);
+            background-size: 200% 100%;
+            animation: slide 2s linear infinite;
+        }
+
+        @keyframes slide {
+            0%   { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        /* ---- MAIN CARD ---- */
+        .card {
+            width: 100%;
+            max-width: 520px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 20px 20px;
+            padding: 40px 36px 44px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        /* ---- SUCCESS RING ---- */
+        .ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(46, 204, 113, 0.12);
+            border: 2px solid var(--accent-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+        }
+
+        @keyframes pop {
+            0%   { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .ring svg {
+            width: 36px;
+            height: 36px;
+            stroke: var(--accent-green);
+        }
+
+        /* ---- TYPOGRAPHY ---- */
+        .badge-live {
+            display: inline-block;
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--accent-green);
+            padding: 5px 14px;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .event-name {
+            font-size: 1.05rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .subtext {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 36px;
+            line-height: 1.5;
+        }
+
+        /* ---- WARNING BANNER ---- */
+        .warning {
+            background: rgba(255, 217, 61, 0.08);
+            border: 1px solid rgba(255, 217, 61, 0.25);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: #ffd93d;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-align: left;
+        }
+
+        /* ---- BUY NOW BUTTON ---- */
+        .btn-buy {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 20px rgba(46, 204, 113, 0.35);
+        }
+
+        .btn-buy:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(46, 204, 113, 0.5);
+        }
+
+        .btn-buy:active {
+            transform: translateY(0);
+        }
+
+        /* ---- BLOCKED STATE (bot bypass detected) ---- */
+        .blocked {
+            background: rgba(220, 53, 69, 0.08);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            color: #e57373;
+            display: none;
+        }
+
+        /* ---- FOOTER ---- */
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.78rem;
+            color: #4a5568;
+        }
+    </style>
+</head>
+<body>
+
+<div class="confetti-bar"></div>
+<div class="card">
+
+    <div class="ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+    </div>
+
+    <div class="badge-live">🟢 Sale Live Now</div>
+    <h1>You're In!</h1>
+    <p class="event-name" id="event-name">Loading event...</p>
+    <p class="subtext">
+        You've secured your spot in the queue.<br>
+        Tickets are limited — proceed quickly to lock in your seats.
+    </p>
+
+    <div class="warning">
+        <span style="font-size:1.1rem;">⚠️</span>
+        <span>Your session will expire if you leave this page. Do not refresh.</span>
+    </div>
+
+    <button class="btn-buy" id="buy-btn" onclick="enterSale()">
+        Buy Now &nbsp;
+    </button>
+
+    <!-- shown if bot bypass is detected -->
+    <div class="blocked" id="blocked-msg">
+        <strong>⛔ Session Invalid</strong><br>
+        Your session could not be verified. Please return to the queue and try again.
+        <br><br>
+        <button onclick="localStorage.clear(); window.location.href='home.html'"
+                style="background:none;border:1px solid #e57373;color:#e57373;
+                       padding:8px 16px;border-radius:6px;cursor:pointer;">
+            Return to Home
+        </button>
+    </div>
+
+    <p class="footer-note" id="token-status"></p>
+</div>
+
+<script>
+    // =============================================
+    // 🔐 GATE TOKEN VALIDATION
+    // =============================================
+    // salelive.html should only be reachable by clicking the button on
+    // waitingroom.html after the countdown ends. That button stamps a
+    // gate_token (timestamp) into sessionStorage right before navigating
+    // here. If that token is missing or stale (> 60s old), the user
+    // didn't come through the waiting room legitimately — flag it.
+
+    const GATE_EXPIRY_MS = 60000; // token must be < 60 seconds old
+
+    window.onload = function () {
+
+        const eventName = localStorage.getItem('selected_event') || 'Event';
+        document.getElementById('event-name').innerText = eventName;
+
+        const rawToken = sessionStorage.getItem('gate_token');
+        const tokenAge = rawToken ? (Date.now() - parseInt(rawToken)) : Infinity;
+        const validEntry = rawToken && tokenAge < GATE_EXPIRY_MS;
+
+        if (!validEntry) {
+            // ⛔ Arrived here without going through the waiting room
+            console.warn('Gate token missing or expired. Flagging as potential bypass.');
+
+            // Mark the pattern so the server knows the queue was skipped
+            let pattern = localStorage.getItem('fyp_pattern') || '';
+            if (!pattern.includes('X')) {
+                pattern += 'X'; // X = queue bypass detected
+                localStorage.setItem('fyp_pattern', pattern);
+            }
+
+            // Show the blocked message; hide the buy button
+            document.getElementById('buy-btn').style.display = 'none';
+            document.getElementById('blocked-msg').style.display = 'block';
+            document.getElementById('token-status').innerText =
+                'Error: queue gate not cleared.';
+            return;
+        }
+
+        // ✅ Legitimate entry — consume the token (one-use) and continue
+        sessionStorage.removeItem('gate_token');
+
+        // Stamp a verified sale token so select.html knows we passed this gate
+        sessionStorage.setItem('sale_verified', Date.now().toString());
+
+        document.getElementById('token-status').innerText =
+            'Session verified ✓';
+    };
+
+    function enterSale() {
+        // Record the "entered sale" action in the behavioral pattern
+        let pattern = localStorage.getItem('fyp_pattern') || 'HA';
+        if (!pattern.includes('E')) {
+            pattern += 'E';
+            localStorage.setItem('fyp_pattern', pattern);
+        }
+
+        window.location.href = 'select.html';
+    }
+</script>
+
+<script src="config.js"></script>
+<script src="telemetry.js"></script>
+</body>
+</html>

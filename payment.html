@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Hub - Secure Checkout</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* Sleek light theme matching step forms */
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .payment-summary {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .summary-row.total {
+            border-top: 1px dashed #cbd5e1;
+            padding-top: 16px;
+            margin-top: 16px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #007bff;
+        }
+
+        .credit-card-box {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 25px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        /* Inline input styling to maintain uniformity */
+        .credit-card-box input {
+            width: 100%;
+            padding: 10px 12px;
+            margin-top: 6px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }
+
+        .credit-card-box input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 580px; padding: 40px 20px;">
+        
+        <div class="stepper-wrapper">
+            <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
+            <div class="stepper-item completed"><div class="step-counter">2</div><div class="step-name">Seats & Date</div></div>
+            <div class="stepper-item active"><div class="step-counter">3</div><div class="step-name">Confirmation</div></div>
+        </div>
+
+        <h1 style="text-align: center; margin-bottom: 5px;">Secure Payment</h1>
+        <p style="text-align: center; color: #64748b; margin-bottom: 35px; font-size: 0.95rem;">Please review your final total and provide your payment details below.</p>
+        
+        <div class="payment-summary">
+            <div class="summary-row">
+                <span style="color: #64748b;">Event / Tour:</span>
+                <strong id="pay-event" style="color: #0f172a;">-</strong>
+            </div>
+            <div class="summary-row">
+                <span style="color: #64748b;">Allocation Date:</span>
+                <span id="pay-date" style="color: #334155;">-</span>
+            </div>
+            <div class="summary-row">
+                <span style="color: #64748b;">Tier Selection:</span>
+                <span id="pay-seat" style="color: #334155;">-</span>
+            </div>
+            <div class="summary-row total">
+                <span style="color: #0f172a;">Grand Total:</span>
+                <span id="pay-total">RM 0</span>
+            </div>
+        </div>
+
+        <div class="credit-card-box">
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label for="card-number" style="font-weight: 600; font-size: 0.9rem;">Card Number</label>
+                <input type="text" id="card-number" placeholder="4111 2222 3333 4444" maxlength="19" autocomplete="off">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="card-expiry" style="font-weight: 600; font-size: 0.9rem;">Expiration</label>
+                    <input type="text" id="card-expiry" placeholder="MM/YY" maxlength="5" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="card-cvv" style="font-weight: 600; font-size: 0.9rem;">CVV</label>
+                    <input type="password" id="card-cvv" placeholder="•••" maxlength="3" autocomplete="off">
+                </div>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            
+            <button class="btn btn-secondary" onclick="goBackToConfirm()">Back</button>
+            <button id="submit-pay-btn" class="btn btn-primary" onclick="executeFinalTransaction()">Authorize Payment</button>
+        </div>
+    </div>
+
+    <script>
+    window.onload = function() {
+        let event = localStorage.getItem('selected_event') || "Not Selected";
+        let date = localStorage.getItem('selected_date') || "Not Selected";
+        let seatRaw = localStorage.getItem('selected_seat') || "Not Selected";
+        let qty = parseInt(localStorage.getItem('selected_qty')) || 1;
+
+        document.getElementById('pay-event').innerText = event;
+        document.getElementById('pay-date').innerText = date;
+
+        if (qty > 1 && seatRaw !== "Not Selected") {
+            document.getElementById('pay-seat').innerText = `${seatRaw} x ${qty}`;
+        } else {
+            document.getElementById('pay-seat').innerText = seatRaw;
+        }
+
+        if (seatRaw !== "Not Selected") {
+            let numericPrice = 0;
+            
+            if (seatRaw.includes("RM")) {
+                let pricePart = seatRaw.split("RM")[1]; 
+                numericPrice = parseInt(pricePart.replace(/[^0-9]/g, '')) || 0;
+            } else {
+                numericPrice = parseInt(seatRaw.replace(/[^0-9]/g, '')) || 0;
+            }
+
+            let finalTotal = numericPrice * qty;
+            document.getElementById('pay-total').innerText = `RM ${finalTotal}`;
+        }
+        
+        document.getElementById('card-number').addEventListener('input', function (e) {
+            e.target.value = e.target.value.replace(/[^\d]/g, '').replace(/(.{4})/g, '$1 ').trim();
+        });
+
+        document.getElementById('card-expiry').addEventListener('input', function (e) {
+            let val = e.target.value.replace(/[^\d]/g, '');
+            if (val.length >= 2) {
+                e.target.value = val.slice(0, 2) + '/' + val.slice(2, 4);
+            } else {
+                e.target.value = val;
+            }
+        });
+    };
+
+
+    function goBackToConfirm() {
+        let pattern = localStorage.getItem('fyp_pattern') || "";
+        pattern += "B";
+        localStorage.setItem('fyp_pattern', pattern);
+        window.location.href = 'confirm.html';
+    }
+
+    function executeFinalTransaction() {
+        const cardNum = document.getElementById('card-number').value.trim();
+        const cardExp = document.getElementById('card-expiry').value.trim();
+        const cardCvv = document.getElementById('card-cvv').value.trim();
+
+        if (!cardNum || !cardExp || !cardCvv) {
+            alert("Please fill in your card details to process the secure payment verification tokens.");
+            return;
+        }
+
+        let cookieAttempts = 0;
+        let cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            let c = cookies[i].trim();
+            if (c.indexOf('global_attack_run=') == 0) {
+                cookieAttempts = parseInt(c.substring('global_attack_run='.length, c.length)) || 0;
+            }
+        }
+        
+        cookieAttempts++;
+        document.cookie = "global_attack_run=" + cookieAttempts + "; path=/";
+
+        let attemptCount = cookieAttempts;
+        localStorage.setItem('payment_attempts', attemptCount);
+
+        let pattern = localStorage.getItem('fyp_pattern') || "HADSC";
+        if (!pattern.includes('P')) {
+            pattern += 'P';
+            localStorage.setItem('fyp_pattern', pattern);
+        }
+
+        console.log("Current Global Multi-Bot Attack Count:", attemptCount);
+
+        const qtySelected = parseInt(localStorage.getItem('selected_qty')) || 1;
+        const startTime = localStorage.getItem('start_time') || Date.now();
+        const totalDurationMs = Date.now() - parseInt(startTime);
+        const qtySpeed = localStorage.getItem('qty_select_speed') || "0";
+        const mouseMoves = typeof getMouseMoveCount === 'function'
+            ? getMouseMoveCount()
+            : parseInt(localStorage.getItem('fyp_mouse_moves') || '0');
+
+        fetch(`${NGROK_URL}/evaluate`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ 
+                pattern: pattern, 
+                duration: totalDurationMs,
+                quantity: qtySelected,
+                qty_speed: parseInt(qtySpeed),
+                mouse_movements: mouseMoves
+            })
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Fallback execution route routing");
+            return res.json();
+        })
+        .then(data => {
+
+            if (data.tier === 3) {
+
+                alert("Tier 3 Active: Suspicious activity detected.");
+                window.location.href = 'ghost_ticket.html';
+
+            } else if (data.tier === 2) {
+
+                alert("Tier 2 Active: Bot injection signature detected. Transferring to verification portal.");
+                window.location.href = 'captcha.html';
+
+            } else {
+
+                alert("Payment authorized successfully! Preparing your booking details...");
+                window.location.href = 'success.html';
+
+            }
+
+        })
+        .catch(err => {
+            console.warn("Evaluation API error:", err);
+
+             alert("Unable to verify risk score (" + err + "). Please try again.");
+        });
+    }
+    </script>
+
+    <script src="config.js"></script>
+    <script src="telemetry.js"></script>
+</body>
+</html>

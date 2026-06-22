@@ -1,0 +1,110 @@
+body { 
+    font-family: 'Segoe UI', Arial, sans-serif; 
+    background-color: #f4f7f6; 
+    color: #333; 
+    margin: 0; 
+    padding: 40px; 
+}
+
+.container { 
+    max-width: 600px; 
+    margin: 40px auto; 
+    background: white; 
+    padding: 30px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+    text-align: center; 
+}
+
+h1 { color: #111; margin-top: 0; font-size: 1.8rem; }
+h2 { color: #555; font-size: 1.2rem; margin-top: 20px; text-align: left; }
+p { color: #666; line-height: 1.5; }
+
+/* --- VISUAL TIMELINE STEPPER --- */
+/* --- VISUAL TIMELINE STEPPER (COMPACT VERSION) --- */
+.stepper-wrapper {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px; /* Reduced from 35px to tuck it closer to the heading */
+    position: relative;
+    max-width: 450px;    /* Constrains the horizontal span so it doesn't look stretched */
+    margin-left: auto;   /* Centers the restricted container block */
+    margin-right: auto;  /* Centers the restricted container block */
+}
+
+.stepper-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 14px;           /* Adjusted to perfectly strike through the smaller 28px circles */
+    left: 0;
+    width: 100%;
+    height: 3px;         /* Slightly thinner connecting bar line */
+    background-color: #e0e0e0;
+    z-index: 1;
+}
+
+.stepper-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    z-index: 2;
+}
+
+.stepper-item .step-counter {
+    width: 28px;         /* Shrunk from 36px */
+    height: 28px;        /* Shrunk from 36px */
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #e0e0e0; /* Thinner border radius line */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: #999;
+    font-size: 0.8rem;   /* Adjusted text size for smaller bubble context */
+}
+
+.stepper-item .step-name {
+    margin-top: 6px;
+    font-size: 0.75rem;  /* Shrunk text size slightly for tighter text tracking */
+    color: #888;
+    font-weight: 600;
+}
+
+.stepper-item.active .step-counter { background-color: #007bff; border-color: #007bff; color: #fff; }
+.stepper-item.active .step-name { color: #007bff; font-weight: bold; }
+.stepper-item.completed .step-counter { background-color: #28a745; border-color: #28a745; color: #fff; }
+.stepper-item.completed .step-name { color: #28a745; }
+
+/* --- SELECTION CARDS --- */
+.event-list, .date-list { display: flex; flex-direction: column; gap: 12px; margin: 20px 0; }
+.event-card, .date-card, .ticket-option { 
+    display: flex; justify-content: space-between; align-items: center; 
+    padding: 15px; border: 1px solid #e0e0e0; border-radius: 8px; 
+    background: #fff; text-align: left; cursor: pointer;
+}
+.event-card:hover, .date-card:hover, .ticket-option:hover { border-color: #007bff; background-color: #f4f9ff; }
+.active-card { border-color: #007bff !important; background-color: #f4f9ff !important; box-shadow: 0 2px 8px rgba(0,123,255,0.1); }
+.badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+.hidden-section { display: none; margin-top: 25px; border-top: 2px dashed #e0e0e0; padding-top: 20px; }
+
+/* --- FORMS & BUTTONS --- */
+.form-group { margin-bottom: 15px; text-align: left; }
+.form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
+.form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
+.btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; font-weight: bold; text-decoration: none; display: inline-block; }
+.btn-primary { background: #007bff; color: white; }
+.btn-secondary { background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
+.btn-danger { background: #dc3545; color: white; }
+.btn-checkout { background: #28a745; color: white; width: 100%; font-size: 1.1rem; padding: 12px; }
+.btn-disabled { background: #cccccc; color: #666666; cursor: not-allowed; }
+.nav-buttons { display: flex; justify-content: space-between; gap: 15px; margin-top: 30px; }
+
+/* --- OTHER UI --- */
+.payment-box { background: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 20px; text-align: left; margin-top: 20px; }
+.secure-badge { display: inline-flex; align-items: center; gap: 8px; background: #e2f0d9; color: #385723; padding: 8px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; margin-bottom: 15px; }
+.payment-methods { display: flex; gap: 15px; margin: 15px 0; }
+.method-card { flex: 1; border: 1px solid #ccc; border-radius: 6px; padding: 12px; text-align: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+.method-card:hover { border-color: #007bff; background: #f4f9ff; }

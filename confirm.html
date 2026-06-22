@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Hub - Booking Confirmation</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+    <div class="container">
+        <div class="stepper-wrapper">
+            <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
+            <div class="stepper-item completed"><div class="step-counter">2</div><div class="step-name">Seats & Date</div></div>
+            <div class="stepper-item active"><div class="step-counter">3</div><div class="step-name">Confirmation</div></div>
+        </div>
+
+        <h1>Review Details</h1>
+        
+        <div style="background: #f1f3f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+            <p><strong>Event:</strong> <span id="summary-event"></span></p>
+            <p><strong>Date:</strong> <span id="summary-date"></span></p>
+            <p><strong>Category:</strong> <span id="summary-seat"></span></p>
+        </div>
+
+        <div class="form-group">
+            <label for="fullname">Full Name</label>
+            <input type="text" id="fullname" placeholder="Enter your official name" required>
+        </div>
+        <div class="form-group" style="margin-top: 15px;">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" placeholder="name@example.com" required>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; gap: 15px;">
+            <button class="btn"onclick="goBackToSeatSelection()"style="background:#6c757d; color:white;">Back</button>
+            <button class="btn btn-primary" onclick="validateAndCheckout()">Proceed to Payment</button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            document.getElementById('summary-event').innerText = localStorage.getItem('selected_event') || 'None Selected';
+            document.getElementById('summary-date').innerText = localStorage.getItem('selected_date') || 'None Selected';
+            
+            let seatDetails = localStorage.getItem('selected_seat') || "None Selected";
+            let qtySelected = parseInt(localStorage.getItem('selected_qty')) || 1;
+
+            if (qtySelected > 1 && seatDetails !== "None Selected") {
+                document.getElementById('summary-seat').innerText = `${seatDetails} x ${qtySelected}`;
+            } else {
+                document.getElementById('summary-seat').innerText = seatDetails;
+            }
+
+            // Sync structural sequence verification matrix state on context access
+            let pattern = localStorage.getItem('fyp_pattern') || "HADS";
+            if (!pattern.includes('C')) {
+                pattern += 'C';
+                localStorage.setItem('fyp_pattern', pattern);
+            }
+        };
+
+
+        function goBackToSeatSelection() {
+
+            let pattern = localStorage.getItem('fyp_pattern') || "";
+            pattern += "B";
+            localStorage.setItem('fyp_pattern', pattern);
+            window.history.back();
+        }
+
+        function validateAndCheckout() {
+
+            console.log("VALIDATE FUNCTION ENTERED");
+
+            const name = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
+
+            const pattern = localStorage.getItem('fyp_pattern') || "HADSC";
+            const qtySelected = parseInt(localStorage.getItem('selected_qty')) || 1;
+            const startTime = localStorage.getItem('session_start') || Date.now();
+            const totalDurationMs = Date.now() - parseInt(startTime);
+            const qtySpeed = localStorage.getItem('qty_select_speed') || "0";
+            const mouseMoves = typeof getMouseMoveCount === 'function'
+                ? getMouseMoveCount()
+                : parseInt(localStorage.getItem('fyp_mouse_moves') || '0');
+
+
+            // Speed + pattern alone can't tell a fast human from a bot - a
+            // real person can finish this flow in under 15s too. The thing
+            // a bot (driving the page via execute_script) can't fake is
+            // real mousemove input, so that's required here as well.
+            if (
+                pattern === "HADSQC" &&
+                qtySelected === 1 &&
+                totalDurationMs < 15000 &&
+                mouseMoves < 15
+            ) {
+
+                // This used to just alert() and return, which meant the
+                // server (and therefore the monitor dashboard) never found
+                // out about it. Ping /evaluate with force_tier so it gets
+                // logged too, without re-running the full scorer.
+                fetch(`${NGROK_URL}/evaluate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        pattern: pattern,
+                        duration: totalDurationMs,
+                        quantity: qtySelected,
+                        qty_speed: parseInt(qtySpeed),
+                        mouse_movements: mouseMoves,
+                        force_tier: 1
+                    })
+                }).catch(err => console.warn("Tier 1 fast-path log failed:", err));
+
+                alert(
+                    "Tier 1 Active: Suspicious automated behaviour detected due to elevated interaction speed."
+                );
+
+                // Match the real Tier 1 response elsewhere in this flow:
+                // apply friction, then continue automatically instead of
+                // dead-ending here and forcing a second click to proceed.
+                setTimeout(() => {
+                    window.location.href = "payment.html";
+                }, 3000);
+
+                return;
+            }
+
+            console.log("NAME =", name);
+            console.log("EMAIL =", email);
+            console.log("PATTERN =", pattern);
+            console.log("QTY =", qtySelected);
+
+            
+            if (!name || !email) {
+                alert("Please fill in your profile details.");
+                return;
+            }
+
+            fetch(`${NGROK_URL}/evaluate`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+        pattern: pattern,
+        duration: totalDurationMs,
+        quantity: qtySelected,
+        qty_speed: parseInt(qtySpeed),
+        mouse_movements: mouseMoves
+    })
+})
+.then(res => res.json())
+.then(data => {
+
+    console.log("SERVER RESPONSE =", data);
+
+    switch(data.tier){
+
+        case 1:
+
+            alert(
+                "Tier 1 Detection\nArtificial delay applied."
+            );
+
+            setTimeout(() => {
+                window.location.href = "payment.html";
+            }, 3000);
+
+            break;
+
+        case 2:
+
+            alert(
+                "Tier 2 Detection\nCAPTCHA required."
+            );
+
+            window.location.href =
+                "captcha.html";
+
+            break;
+
+        case 3:
+
+            alert(
+                "Tier 3 Detection\nGhost ticket activated."
+            );
+
+            window.location.href =
+                "ghost_ticket.html";
+
+            break;
+
+        default:
+
+            window.location.href =
+                "payment.html";
+    }
+
+})
+.catch(err => {
+    console.error("FETCH ERROR =", err);
+    alert("Could not reach the detection server (" + err + "). Check Flask + ngrok are running, then try again.");
+});
+        }
+    </script>
+
+    <script src="config.js"></script>
+    <script src="telemetry.js"></script>
+</body>
+</html>

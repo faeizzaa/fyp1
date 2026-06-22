@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Hub - Booking Successful</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="config.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .success-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
+
+        /* Animated Success Mark Element */
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #f0fdf4;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            color: #15803d;
+        }
+
+        .receipt-panel {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: left;
+        }
+
+        .receipt-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+        }
+
+        .receipt-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .token-badge {
+            font-family: 'Courier New', Courier, monospace;
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            word-break: break-all;
+            display: inline-block;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" style="max-width: 580px; padding-top: 50px; padding-bottom: 50px;">
+        
+        <div class="success-card">
+            <div class="success-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+            </div>
+
+            <h1 style="margin: 0 0 8px 0; font-size: 1.8rem; color: #15803d;">Booking Confirmed!</h1>
+            <p style="color: #64748b; margin: 0; font-size: 1rem;">Your ticket has successfully secured. Please check you email for more details.</p>
+
+            <div class="receipt-panel">
+                <div class="receipt-row">
+                    <span style="color: #64748b;">Event / Tour:</span>
+                    <strong id="rec-event" style="color: #0f172a;">-</strong>
+                </div>
+                <div class="receipt-row">
+                    <span style="color: #64748b;">Date & Time:</span>
+                    <span id="rec-date" style="color: #334155;">-</span>
+                </div>
+                <div class="receipt-row">
+                    <span style="color: #64748b;">Seat Assignment:</span>
+                    <span id="rec-seat" style="color: #334155;">-</span>
+                </div>
+                <div class="receipt-row">
+                    <span style="color: #64748b;">Final Total Charged:</span>
+                    <strong id="rec-total" style="color: #007bff;">RM 0</strong>
+                </div>
+                <div style="margin-top: 15px; border-top: 1px solid #cbd5e1; padding-top: 12px; text-align: center;">
+                    <span style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; display: block;">Secure Verification Token</span>
+                    <div class="token-badge" id="telemetry-token">GENERATE_TOKEN</div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button class="btn btn-secondary" style="margin: 0; width: auto;" onclick="window.print()">Print Receipt</button>
+                <button class="btn btn-primary" style="margin: 0; width: auto;" onclick="returnToStart()">Book Another Event</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        window.onload = function() {
+            // 1. Fetch values saved out of local session cache storage
+            let event = localStorage.getItem('selected_event') || "Not Selected";
+            let date = localStorage.getItem('selected_date') || "Not Selected";
+            let seatRaw = localStorage.getItem('selected_seat') || "Not Selected";
+            let qty = parseInt(localStorage.getItem('selected_qty')) || 1;
+            let finalPattern = localStorage.getItem('fyp_pattern') || "UNKNOWN_FLOW";
+
+            document.getElementById('rec-event').innerText = event;
+            document.getElementById('rec-date').innerText = date;
+
+            // 2. Format ticket and quantity layout text channels
+            if (qty > 1 && seatRaw !== "Not Selected") {
+                document.getElementById('rec-seat').innerText = `${seatRaw} x ${qty}`;
+            } else {
+                document.getElementById('rec-seat').innerText = seatRaw;
+            }
+
+            // 3. Compute final balance string logic accurately
+if (seatRaw !== "Not Selected") {
+    let numericPrice = 0;
+    
+    if (seatRaw.includes("RM")) {
+        let pricePart = seatRaw.split("RM")[1];
+        numericPrice = parseInt(pricePart.replace(/[^0-9]/g, '')) || 0;
+    } else {
+        numericPrice = parseInt(seatRaw.replace(/[^0-9]/g, '')) || 0;
+    }
+    
+    document.getElementById('rec-total').innerText = `RM ${numericPrice * qty}`;
+}
+
+            // 4. Generate a unique, pseudo-crypto tracking signature for verification presentation
+            // Shows user's exact behavioral pattern sequence string (e.g., "HASQC") to tie it back to your research parameters!
+            let randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
+            document.getElementById('telemetry-token').innerText = `TKT-${finalPattern}-${randomHex}`;
+        };
+
+        function returnToStart() {
+            // Clean out local device variables to clear up security tracking fields for the next visitor
+            localStorage.clear();
+            window.location.href = 'home.html';
+        }
+    </script>
+</body>
+</html>

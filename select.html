@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Hub - Choose Date & Seats</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        .badge { background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; }
+        .hidden-section { display: none; margin-top: 25px; border-top: 2px dashed #e0e0e0; padding-top: 20px; }
+        .active-card { border-color: #007bff !important; background-color: #f4f9ff !important; box-shadow: 0 2px 8px rgba(0,123,255,0.1); }
+        
+        /* Stylized Dropdown */
+        .qty-box { margin-top: 8px; display: none; align-items: center; gap: 10px; font-size: 0.9rem; }
+        .qty-select { padding: 5px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stepper-wrapper">
+            <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
+            <div class="stepper-item active"><div class="step-counter">2</div><div class="step-name">Seats & Date</div></div>
+            <div class="stepper-item"><div class="step-counter">3</div><div class="step-name">Confirmation</div></div>
+        </div>
+
+        <h1 id="event-title">Concert Booking</h1>
+        
+        <h2>1. Select a show date</h2>
+        <div class="date-list">
+            <div class="date-card" id="date1-card" onclick="chooseDate('12 Dec 2026 (Day 1 - Saturday)', 'date1')">
+                <div><strong>Day 1 (Saturday)</strong><br><small>12 Dec 2026 - 8:00 PM</small></div>
+                <span id="badge-date1" class="badge" style="display:none;">Selected</span>
+            </div>
+            <div class="date-card" id="date2-card" onclick="chooseDate('13 Dec 2026 (Day 2 - Sunday)', 'date2')">
+                <div><strong>Day 2 (Sunday)</strong><br><small>13 Dec 2026 - 8:00 PM</small></div>
+                <span id="badge-date2" class="badge" style="display:none;">Selected</span>
+            </div>
+        </div>
+
+        <div id="seat-section" class="hidden-section">
+            <h2>2. Choose your ticket option</h2>
+            <p>Available categories for <span id="chosen-context-text" style="font-weight: bold; color: #007bff;"></span> (Max 5 tickets per customer):</p>
+            <div class="event-list">
+                
+                <div class="ticket-option" id="tier1-card" onclick="chooseSeat('Rock Zone (Standing) - RM 599', 'tier1-card')">
+                    <div style="flex-grow: 1;">
+                        <span><strong>Rock Zone (Standing)</strong> - RM 599</span>
+                        <div class="qty-box" id="qty-box-1" onclick="event.stopPropagation();">
+                            <label>Quantity:</label>
+                            <select class="qty-select" id="select-qty-1" onchange="updateQuantity(this.value)">
+                                <option value="1">1 Ticket</option>
+                                <option value="2">2 Tickets</option>
+                                <option value="3">3 Tickets</option>
+                                <option value="4">4 Tickets</option>
+                                <option value="5">5 Tickets (MAX)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span id="badge-tier1" class="badge" style="display:none;">Selected</span>
+                </div>
+
+                <div class="ticket-option" id="tier2-card" onclick="chooseSeat('VIP Box (Seated) - RM 499', 'tier2-card')">
+                    <div style="flex-grow: 1;">
+                        <span><strong>VIP Box (Seated)</strong> - RM 499</span>
+                        <div class="qty-box" id="qty-box-2" onclick="event.stopPropagation();">
+                            <label>Quantity:</label>
+                            <select class="qty-select" id="select-qty-2" onchange="updateQuantity(this.value)">
+                                <option value="1">1 Ticket</option>
+                                <option value="2">2 Tickets</option>
+                                <option value="3">3 Tickets</option>
+                                <option value="4">4 Tickets</option>
+                                <option value="5">5 Tickets (MAX)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span id="badge-tier2" class="badge" style="display:none;">Selected</span>
+                </div>
+
+                <div class="ticket-option" id="tier3-card" onclick="chooseSeat('CAT 1 (General Seating) - RM 399', 'tier3-card')">
+                    <div style="flex-grow: 1;">
+                        <span><strong>CAT 1 (General Seating)</strong> - RM 399</span>
+                        <div class="qty-box" id="qty-box-3" onclick="event.stopPropagation();">
+                            <label>Quantity:</label>
+                            <select class="qty-select" id="select-qty-3" onchange="updateQuantity(this.value)">
+                                <option value="1">1 Ticket</option>
+                                <option value="2">2 Tickets</option>
+                                <option value="3">3 Tickets</option>
+                                <option value="4">4 Tickets</option>
+                                <option value="5">5 Tickets (MAX)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span id="badge-tier3" class="badge" style="display:none;">Selected</span>
+                </div>
+
+                <div class="ticket-option" id="tier4-card" onclick="chooseSeat('CAT 2 (Standard Seating) - RM 299', 'tier4-card')">
+                    <div style="flex-grow: 1;">
+                        <span><strong>CAT 2 (Standard Seating)</strong> - RM 299</span>
+                        <div class="qty-box" id="qty-box-4" onclick="event.stopPropagation();">
+                            <label>Quantity:</label>
+                            <select class="qty-select" id="select-qty-4" onchange="updateQuantity(this.value)">
+                                <option value="1">1 Ticket</option>
+                                <option value="2">2 Tickets</option>
+                                <option value="3">3 Tickets</option>
+                                <option value="4">4 Tickets</option>
+                                <option value="5">5 Tickets (MAX)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span id="badge-tier4" class="badge" style="display:none;">Selected</span>
+                </div>
+
+                <div class="ticket-option" id="tier5-card" onclick="chooseSeat('CAT 3 (Value Seating) - RM 199', 'tier5-card')">
+                    <div style="flex-grow: 1;">
+                        <span><strong>CAT 3 (Value Seating)</strong> - RM 199</span>
+                        <div class="qty-box" id="qty-box-5" onclick="event.stopPropagation();">
+                            <label>Quantity:</label>
+                            <select class="qty-select" id="select-qty-5" onchange="updateQuantity(this.value)">
+                                <option value="1">1 Ticket</option>
+                                <option value="2">2 Tickets</option>
+                                <option value="3">3 Tickets</option>
+                                <option value="4">4 Tickets</option>
+                                <option value="5">5 Tickets (MAX)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <span id="badge-tier5" class="badge" style="display:none;">Selected</span>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            
+            <button class="btn btn-secondary" onclick="goBackHome()">Back</button>
+            <button id="next-btn" class="btn btn-disabled" disabled onclick="goNext()">Next</button>
+        </div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            document.getElementById('event-title').innerText = localStorage.getItem('selected_event') || "Concert Booking";
+            
+            // =============================================
+            // 🔐 SALE GATE VERIFICATION
+            // =============================================
+            // salelive.html sets 'sale_verified' in sessionStorage when a
+            // user legitimately clears the waiting room. If it's missing
+            // here, someone navigated straight to select.html, skipping
+            // both the waiting room and the salelive gate entirely — a
+            // classic bot bypass pattern. Mark it in the action string.
+            const saleVerified = sessionStorage.getItem('sale_verified');
+            if (!saleVerified) {
+                let pattern = localStorage.getItem('fyp_pattern') || '';
+                if (!pattern.includes('X')) {
+                    pattern += 'X'; // X = queue + sale gate bypassed
+                    localStorage.setItem('fyp_pattern', pattern);
+                }
+                console.warn('Sale gate not verified — possible bot bypass detected.');
+            } else {
+                // Consume it so refreshing select.html doesn't keep it alive
+                sessionStorage.removeItem('sale_verified');
+            }
+
+            if (!localStorage.getItem('session_start')) {
+                localStorage.setItem(
+                    'session_start',
+                Date.now()
+                );
+            }
+
+            // Baseline structural initialization logic tracking protection
+            let pattern = localStorage.getItem('fyp_pattern') || "";
+            if (!pattern.startsWith('H')) {
+                pattern = 'H' + pattern;
+            }
+            if (!pattern.includes('A')) {
+                pattern += 'A';
+            }
+            localStorage.setItem('fyp_pattern', pattern);
+        };
+
+        let seatSelectionTime = 0;
+
+        function chooseDate(dateString, type) {
+            localStorage.setItem('selected_date', dateString);
+
+            // Action String Tracking - D (Date Selection)
+            let pattern = localStorage.getItem('fyp_pattern') || "HA";
+
+            if (!pattern.includes('D')) {
+                pattern += 'D';
+                localStorage.setItem('fyp_pattern', pattern);
+            }
+
+            document.getElementById('date1-card').className = 'date-card';
+            document.getElementById('date2-card').className = 'date-card';
+            document.getElementById('badge-date1').style.display = 'none';
+            document.getElementById('badge-date2').style.display = 'none';
+
+            if (type === 'date1') {
+                document.getElementById('date1-card').className = 'date-card active-card';
+                document.getElementById('badge-date1').style.display = 'block';
+            } else {
+                document.getElementById('date2-card').className = 'date-card active-card';
+                document.getElementById('badge-date2').style.display = 'block';
+            }
+            
+            document.getElementById('chosen-context-text').innerText = dateString;
+            document.getElementById('seat-section').style.display = 'block'; 
+        }
+
+        function chooseSeat(seatDetails, cardId) {
+            localStorage.setItem('selected_seat', seatDetails);
+            seatSelectionTime = Date.now();
+
+            for(let i = 1; i <= 5; i++){
+                document.getElementById(`tier${i}-card`).className = 'ticket-option';
+                document.getElementById(`badge-tier${i}`).style.display = 'none';
+                document.getElementById(`qty-box-` + i).style.display = 'none';
+                document.getElementById(`select-qty-` + i).value = "1";
+            }
+
+            document.getElementById(cardId).className = 'ticket-option active-card';
+            let tierNum = cardId.match(/\d+/)[0];
+            document.getElementById(`badge-tier${tierNum}`).style.display = 'block';
+            document.getElementById(`qty-box-` + tierNum).style.display = 'flex';
+            
+            localStorage.setItem('selected_qty', "1");
+
+           let pattern = localStorage.getItem('fyp_pattern') || "HAD";
+            //if (!pattern.includes('S')) {
+               // pattern += 'S';
+               // localStorage.setItem('fyp_pattern', pattern);
+            //}
+
+            pattern += 'S';
+            localStorage.setItem('fyp_pattern', pattern);
+            // Tier 1 Early Detection
+
+
+            const nextBtn = document.getElementById('next-btn');
+            nextBtn.disabled = false;
+            nextBtn.className = "btn btn-primary";
+        }
+
+        function updateQuantity(qtyValue) {
+            localStorage.setItem('selected_qty', qtyValue);
+            
+            let delay = Date.now() - seatSelectionTime;
+            localStorage.setItem('qty_select_speed', delay);
+
+            let pattern = localStorage.getItem('fyp_pattern') || "HADS";
+            if (!pattern.includes('Q')) {
+                pattern += 'Q';
+                localStorage.setItem('fyp_pattern', pattern);
+            }
+        }
+
+
+        function goNext() {
+             window.location.href = 'confirm.html';
+        }
+
+        function goBackHome() {
+            let pattern = localStorage.getItem('fyp_pattern') || "";
+            pattern += "B";
+            localStorage.setItem('fyp_pattern', pattern);
+            window.location.href = 'home.html';
+        }
+        
+    </script>
+    
+    <script src="config.js"></script>
+    <script src="telemetry.js"></script>
+</body>
+</html>

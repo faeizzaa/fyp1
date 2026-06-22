@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Verification</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .captcha-container {
+            max-width: 500px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .captcha-header {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .captcha-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .captcha-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+
+        .captcha-body {
+            padding: 30px;
+        }
+
+        /* Challenge Tabs */
+        .challenge-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            border-color: #ff9800;
+        }
+
+        .tab.active {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+
+        .tab-icon {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .tab-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* Challenge Sections */
+        .challenge-section {
+            display: none;
+        }
+
+        .challenge-section.active {
+            display: block;
+        }
+
+        /* Text CAPTCHA */
+        .captcha-image-box {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .captcha-image-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.1) 50%, transparent 55%),
+                linear-gradient(-45deg, transparent 45%, rgba(255,255,255,0.1) 50%, transparent 55%);
+            background-size: 20px 20px;
+        }
+
+        .captcha-text {
+            font-family: 'Courier New', monospace;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #fff;
+            letter-spacing: 12px;
+            text-shadow: 
+                2px 2px 0 #e74c3c,
+                -2px -2px 0 #3498db,
+                3px 0 0 #2ecc71;
+            position: relative;
+            user-select: none;
+            transform: skewX(-5deg);
+        }
+
+        .noise-line {
+            position: absolute;
+            height: 2px;
+            background: rgba(255,255,255,0.3);
+            transform: rotate(-5deg);
+        }
+
+        .refresh-captcha {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .refresh-captcha:hover {
+            background: rgba(255,255,255,0.3);
+            transform: rotate(180deg);
+        }
+
+        /* Math Challenge */
+        .math-challenge {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .math-equation {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .math-hint {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        /* Proof of Work */
+        .pow-section {
+            text-align: center;
+        }
+
+        .pow-status {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .pow-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #ff9800;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .pow-spinner.complete {
+            border-color: #4caf50;
+            border-top-color: #4caf50;
+            animation: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .pow-progress {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+
+        .pow-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9800, #f57c00);
+            border-radius: 4px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+
+        .pow-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .pow-stat-value {
+            font-weight: bold;
+            color: #333;
+            font-family: monospace;
+        }
+
+        /* Slider Challenge */
+        .slider-challenge {
+            margin-bottom: 20px;
+        }
+
+        .slider-track {
+            background: #e0e0e0;
+            border-radius: 25px;
+            height: 50px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slider-puzzle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border-radius: 25px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+
+        .slider-puzzle:active {
+            cursor: grabbing;
+        }
+
+        .slider-puzzle.success {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+        }
+
+        .slider-target {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            width: 40px;
+            height: 40px;
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px dashed #4caf50;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider-instructions {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* Input Fields */
+        .captcha-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            text-align: center;
+            letter-spacing: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s;
+        }
+
+        .captcha-input:focus {
+            outline: none;
+            border-color: #ff9800;
+        }
+
+        .captcha-input.error {
+            border-color: #f44336;
+            animation: shake 0.5s;
+        }
+
+        .captcha-input.success {
+            border-color: #4caf50;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        /* Buttons */
+        .btn-verify {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-verify:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .btn-verify:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-verify.success {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+        }
+
+        /* Error/Success Messages */
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .message.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .message.success {
+            display: block;
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        /* Attempts Counter */
+        .attempts-info {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 15px;
+        }
+
+        .attempts-info strong {
+            color: #f44336;
+        }
+
+        /* Footer Info */
+        .captcha-footer {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #888;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .captcha-footer a {
+            color: #ff9800;
+            text-decoration: none;
+        }
+
+        /* Booking Info */
+        .booking-reminder {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+
+        .booking-reminder strong {
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="captcha-container">
+        <div class="captcha-header">
+            <h1>🛡️ Security Verification</h1>
+            <p>Complete the challenge below to continue your booking</p>
+        </div>
+
+        <div class="captcha-body">
+            <!-- Booking Reminder -->
+            <div class="booking-reminder">
+                <strong>🎫 Your tickets are reserved!</strong><br>
+                Complete verification within <span id="timer">2:00</span> to secure your booking.
+            </div>
+
+            <!-- Challenge Type Tabs -->
+            <div class="challenge-tabs">
+                <div class="tab active" onclick="switchTab('text')">
+                    <div class="tab-icon">🔤</div>
+                    <div class="tab-label">Text</div>
+                </div>
+                <div class="tab" onclick="switchTab('math')">
+                    <div class="tab-icon">🔢</div>
+                    <div class="tab-label">Math</div>
+                </div>
+                <div class="tab" onclick="switchTab('slider')">
+                    <div class="tab-icon">➡️</div>
+                    <div class="tab-label">Slide</div>
+                </div>
+                <div class="tab" onclick="switchTab('pow')">
+                    <div class="tab-icon">⚡</div>
+                    <div class="tab-label">Auto</div>
+                </div>
+            </div>
+
+            <!-- Message Display -->
+            <div id="message" class="message"></div>
+
+            <!-- TEXT CAPTCHA -->
+            <div id="challenge-text" class="challenge-section active">
+                <div class="captcha-image-box">
+                    <button class="refresh-captcha" onclick="generateTextCaptcha()" title="Get new code">🔄</button>
+                    <div class="captcha-text" id="captcha-display">LOADING</div>
+                    <div class="noise-line" style="width: 80%; top: 30%; left: 10%;"></div>
+                    <div class="noise-line" style="width: 60%; top: 60%; left: 20%;"></div>
+                </div>
+                <input 
+                    type="text" 
+                    id="text-input" 
+                    class="captcha-input" 
+                    placeholder="Enter code above"
+                    maxlength="6"
+                    autocomplete="off"
+                >
+                <button class="btn-verify" onclick="verifyTextCaptcha()">
+                    Verify & Continue
+                </button>
+            </div>
+
+            <!-- MATH CAPTCHA -->
+            <div id="challenge-math" class="challenge-section">
+                <div class="math-challenge">
+                    <div class="math-equation" id="math-equation">12 + 7 = ?</div>
+                    <div class="math-hint">Solve the equation above</div>
+                </div>
+                <input 
+                    type="number" 
+                    id="math-input" 
+                    class="captcha-input" 
+                    placeholder="Your answer"
+                    autocomplete="off"
+                >
+                <button class="btn-verify" onclick="verifyMathCaptcha()">
+                    Verify & Continue
+                </button>
+            </div>
+
+            <!-- SLIDER CAPTCHA -->
+            <div id="challenge-slider" class="challenge-section">
+                <div class="slider-challenge">
+                    <div class="slider-track" id="slider-track">
+                        <div class="slider-target">✓</div>
+                        <div class="slider-puzzle" id="slider-puzzle">➡️</div>
+                    </div>
+                    <div class="slider-instructions">
+                        Drag the slider to the green target
+                    </div>
+                </div>
+                <button class="btn-verify" id="slider-verify-btn" onclick="verifySlider()" disabled>
+                    Complete the slider first
+                </button>
+            </div>
+
+            <!-- PROOF OF WORK -->
+            <div id="challenge-pow" class="challenge-section">
+                <div class="pow-section">
+                    <div class="pow-status">
+                        <div class="pow-spinner" id="pow-spinner"></div>
+                        <div id="pow-message">Click below to start automatic verification</div>
+                        <div class="pow-progress">
+                            <div class="pow-progress-bar" id="pow-progress"></div>
+                        </div>
+                        <div class="pow-stats">
+                            <div>
+                                Hashes: <span class="pow-stat-value" id="pow-hashes">0</span>
+                            </div>
+                            <div>
+                                Time: <span class="pow-stat-value" id="pow-time">0.0s</span>
+                            </div>
+                            <div>
+                                Rate: <span class="pow-stat-value" id="pow-rate">0/s</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-verify" id="pow-btn" onclick="startProofOfWork()">
+                        ⚡ Start Verification
+                    </button>
+                </div>
+            </div>
+
+            <div class="attempts-info">
+                Attempts remaining: <strong id="attempts">3</strong>
+            </div>
+        </div>
+
+        <div class="captcha-footer">
+            This verification helps prevent automated purchases.<br>
+            <a href="home.html">Cancel and return to homepage</a>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        // ==========================================
+        // STATE MANAGEMENT
+        // ==========================================
+        let currentChallenge = 'text';
+        let textCaptchaAnswer = '';
+        let mathCaptchaAnswer = 0;
+        let sliderComplete = false;
+        let attemptsRemaining = 3;
+        let timerSeconds = 120;
+        let timerInterval;
+
+        // Get session data from localStorage
+        const sessionId = sessionStorage.getItem('server_session_id') || 'unknown';
+
+        // ==========================================
+        // TIMER
+        // ==========================================
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timerSeconds--;
+                const mins = Math.floor(timerSeconds / 60);
+                const secs = timerSeconds % 60;
+                document.getElementById('timer').textContent = 
+                    `${mins}:${secs.toString().padStart(2, '0')}`;
+                
+                if (timerSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    showMessage('Time expired! Your reservation has been released.', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'home.html';
+                    }, 2000);
+                }
+            }, 1000);
+        }
+
+        // ==========================================
+        // TAB SWITCHING
+        // ==========================================
+        function switchTab(type) {
+            currentChallenge = type;
+            
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.closest('.tab').classList.add('active');
+            
+            // Update sections
+            document.querySelectorAll('.challenge-section').forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`challenge-${type}`).classList.add('active');
+            
+            // Clear message
+            hideMessage();
+            
+            // Initialize the selected challenge
+            if (type === 'text') generateTextCaptcha();
+            if (type === 'math') generateMathCaptcha();
+            if (type === 'slider') initSlider();
+        }
+
+        // ==========================================
+        // MESSAGE DISPLAY
+        // ==========================================
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+        }
+
+        function hideMessage() {
+            document.getElementById('message').className = 'message';
+        }
+
+        // ==========================================
+        // TEXT CAPTCHA
+        // ==========================================
+        function generateTextCaptcha() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let captcha = '';
+            for (let i = 0; i < 6; i++) {
+                captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            textCaptchaAnswer = captcha;
+            document.getElementById('captcha-display').textContent = captcha;
+            document.getElementById('text-input').value = '';
+            document.getElementById('text-input').className = 'captcha-input';
+        }
+
+        function verifyTextCaptcha() {
+            const input = document.getElementById('text-input');
+            const userAnswer = input.value.toUpperCase().trim();
+            
+            if (userAnswer === textCaptchaAnswer) {
+                input.className = 'captcha-input success';
+                showMessage('✓ Verification successful!', 'success');
+                onVerificationSuccess('text');
+            } else {
+                handleFailedAttempt(input);
+                generateTextCaptcha();
+            }
+        }
+
+        // ==========================================
+        // MATH CAPTCHA
+        // ==========================================
+        function generateMathCaptcha() {
+            const operations = ['+', '-', '×'];
+            const op = operations[Math.floor(Math.random() * operations.length)];
+            let a, b, answer;
+            
+            switch(op) {
+                case '+':
+                    a = Math.floor(Math.random() * 50) + 10;
+                    b = Math.floor(Math.random() * 50) + 10;
+                    answer = a + b;
+                    break;
+                case '-':
+                    a = Math.floor(Math.random() * 50) + 30;
+                    b = Math.floor(Math.random() * 30) + 1;
+                    answer = a - b;
+                    break;
+                case '×':
+                    a = Math.floor(Math.random() * 12) + 2;
+                    b = Math.floor(Math.random() * 12) + 2;
+                    answer = a * b;
+                    break;
+            }
+            
+            mathCaptchaAnswer = answer;
+            document.getElementById('math-equation').textContent = `${a} ${op} ${b} = ?`;
+            document.getElementById('math-input').value = '';
+            document.getElementById('math-input').className = 'captcha-input';
+        }
+
+        function verifyMathCaptcha() {
+            const input = document.getElementById('math-input');
+            const userAnswer = parseInt(input.value);
+            
+            if (userAnswer === mathCaptchaAnswer) {
+                input.className = 'captcha-input success';
+                showMessage('✓ Verification successful!', 'success');
+                onVerificationSuccess('math');
+            } else {
+                handleFailedAttempt(input);
+                generateMathCaptcha();
+            }
+        }
+
+        // ==========================================
+        // SLIDER CAPTCHA
+        // ==========================================
+        function initSlider() {
+            sliderComplete = false;
+            const puzzle = document.getElementById('slider-puzzle');
+            const track = document.getElementById('slider-track');
+            const btn = document.getElementById('slider-verify-btn');
+            
+            puzzle.style.left = '0px';
+            puzzle.className = 'slider-puzzle';
+            btn.disabled = true;
+            btn.textContent = 'Complete the slider first';
+            
+            let isDragging = false;
+            let startX = 0;
+            let puzzleLeft = 0;
+            
+            const trackWidth = track.offsetWidth - puzzle.offsetWidth;
+            const targetStart = trackWidth - 10;
+            
+            puzzle.onmousedown = (e) => {
+                isDragging = true;
+                startX = e.clientX - puzzleLeft;
+                puzzle.style.cursor = 'grabbing';
+            };
+            
+            document.onmousemove = (e) => {
+                if (!isDragging) return;
+                
+                let newLeft = e.clientX - startX;
+                newLeft = Math.max(0, Math.min(newLeft, trackWidth));
+                puzzleLeft = newLeft;
+                puzzle.style.left = newLeft + 'px';
+                
+                if (newLeft >= targetStart) {
+                    puzzle.className = 'slider-puzzle success';
+                    sliderComplete = true;
+                    btn.disabled = false;
+                    btn.textContent = 'Verify & Continue';
+                }
+            };
+            
+            document.onmouseup = () => {
+                isDragging = false;
+                puzzle.style.cursor = 'grab';
+                
+                if (!sliderComplete) {
+                    puzzle.style.left = '0px';
+                    puzzleLeft = 0;
+                }
+            };
+
+            // Touch support
+            puzzle.ontouchstart = (e) => {
+                isDragging = true;
+                startX = e.touches[0].clientX - puzzleLeft;
+            };
+            
+            document.ontouchmove = (e) => {
+                if (!isDragging) return;
+                
+                let newLeft = e.touches[0].clientX - startX;
+                newLeft = Math.max(0, Math.min(newLeft, trackWidth));
+                puzzleLeft = newLeft;
+                puzzle.style.left = newLeft + 'px';
+                
+                if (newLeft >= targetStart) {
+                    puzzle.className = 'slider-puzzle success';
+                    sliderComplete = true;
+                    btn.disabled = false;
+                    btn.textContent = 'Verify & Continue';
+                }
+            };
+            
+            document.ontouchend = () => {
+                isDragging = false;
+                if (!sliderComplete) {
+                    puzzle.style.left = '0px';
+                    puzzleLeft = 0;
+                }
+            };
+        }
+
+        function verifySlider() {
+            if (sliderComplete) {
+                showMessage('✓ Verification successful!', 'success');
+                onVerificationSuccess('slider');
+            }
+        }
+
+        // ==========================================
+        // PROOF OF WORK (Computational Challenge)
+        // ==========================================
+        async function startProofOfWork() {
+            const btn = document.getElementById('pow-btn');
+            const spinner = document.getElementById('pow-spinner');
+            const progress = document.getElementById('pow-progress');
+            const message = document.getElementById('pow-message');
+            
+            btn.disabled = true;
+            btn.textContent = 'Computing...';
+            message.textContent = 'Finding valid hash (this proves you\'re not a bot)...';
+            
+            const difficulty = 4; // Number of leading zeros required
+            const prefix = '0'.repeat(difficulty);
+            const challenge = sessionId + ':' + Date.now();
+            
+            let nonce = 0;
+            let found = false;
+            const startTime = performance.now();
+            const targetHashes = 50000; // Estimated hashes needed
+            
+            // Process in chunks to not freeze the UI
+            async function processChunk() {
+                const chunkSize = 1000;
+                
+                for (let i = 0; i < chunkSize; i++) {
+                    const data = challenge + ':' + nonce;
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    if (hashHex.startsWith(prefix)) {
+                        found = true;
+                        return { nonce, hash: hashHex };
+                    }
+                    
+                    nonce++;
+                }
+                
+                // Update UI
+                const elapsed = (performance.now() - startTime) / 1000;
+                const hashRate = Math.floor(nonce / elapsed);
+                const progressPct = Math.min((nonce / targetHashes) * 100, 95);
+                
+                document.getElementById('pow-hashes').textContent = nonce.toLocaleString();
+                document.getElementById('pow-time').textContent = elapsed.toFixed(1) + 's';
+                document.getElementById('pow-rate').textContent = hashRate.toLocaleString() + '/s';
+                progress.style.width = progressPct + '%';
+                
+                return null;
+            }
+            
+            // Main loop
+            while (!found && nonce < 10000000) {
+                const result = await processChunk();
+                if (result) {
+                    // Success!
+                    const elapsed = (performance.now() - startTime) / 1000;
+                    
+                    spinner.className = 'pow-spinner complete';
+                    progress.style.width = '100%';
+                    message.textContent = '✓ Valid proof found!';
+                    
+                    document.getElementById('pow-hashes').textContent = nonce.toLocaleString();
+                    document.getElementById('pow-time').textContent = elapsed.toFixed(1) + 's';
+                    
+                    showMessage('✓ Verification successful!', 'success');
+                    
+                    // Send proof to server
+                    onVerificationSuccess('pow', {
+                        nonce: result.nonce,
+                        hash: result.hash,
+                        time: elapsed
+                    });
+                    return;
+                }
+                
+                // Allow UI to update
+                await new Promise(r => setTimeout(r, 0));
+            }
+            
+            // Failed (shouldn't happen with reasonable difficulty)
+            btn.disabled = false;
+            btn.textContent = '⚡ Retry Verification';
+            message.textContent = 'Verification timed out. Please try again.';
+        }
+
+        // ==========================================
+        // FAILED ATTEMPT HANDLER
+        // ==========================================
+        function handleFailedAttempt(inputElement) {
+            attemptsRemaining--;
+            document.getElementById('attempts').textContent = attemptsRemaining;
+            
+            inputElement.className = 'captcha-input error';
+            
+            if (attemptsRemaining <= 0) {
+                showMessage('Too many failed attempts. Please try again later.', 'error');
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 2000);
+            } else {
+                showMessage(`Incorrect. ${attemptsRemaining} attempts remaining.`, 'error');
+            }
+        }
+
+        // ==========================================
+        // SUCCESS HANDLER
+        // ==========================================
+        function onVerificationSuccess(method, proofData = {}) {
+            clearInterval(timerInterval);
+            
+            // Send verification result to server
+            fetch(`${NGROK_URL}/api/captcha-verified`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    method: method,
+                    proof: proofData,
+                    timestamp: Date.now()
+                })
+            }).then(() => {
+                // Redirect to payment after short delay
+                setTimeout(() => {
+                    window.location.href = 'payment.html';
+                }, 1500);
+            }).catch(err => {
+                console.error('Verification report failed:', err);
+                // Still proceed even if server report fails
+                setTimeout(() => {
+                    window.location.href = 'payment.html';
+                }, 1500);
+            });
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', () => {
+            generateTextCaptcha();
+            generateMathCaptcha();
+            startTimer();
+        });
+    </script>
+</body>
+</html>
