@@ -53,6 +53,7 @@ def run_single_bot(target_url, screen_position):
         WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.TAG_NAME, "body")))
         print("[Bot2] Waiting room bypass active.")
         driver.get("https://tickago.onrender.com/home.html")
+        driver.execute_script("localStorage.setItem('selected_date', '22 Nov 2026 (Saturday)');")
         print("[Bot2] Queue gate bypassed.")
 
         # =========================

@@ -128,13 +128,38 @@
     <strong id="ev-label"></strong>&nbsp;·&nbsp;<span id="dt-label"></span>
   </p>
 
+  <!-- DATE SELECTION -->
+<h2 style="text-align:left; margin-bottom:10px;">Select Date</h2>
+<div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
+  <div class="date-card" id="date1-card" onclick="chooseDate('22 Nov 2026 (Day 1 - Saturday)', this)">
+    <div><strong>22 Nov 2026</strong><br><small>Day 1 — Saturday</small></div>
+    <span class="badge">Available</span>
+  </div>
+  <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)">
+    <div><strong>23 Nov 2026</strong><br><small>Day 2 — Sunday</small></div>
+    <span class="badge">Available</span>
+  </div>
+</div>
+
+<!-- QUANTITY PICKER -->
+<div id="qty-section" style="display:none; margin-bottom:20px; text-align:left;">
+  <h2 style="margin-bottom:10px;">Number of Tickets</h2>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <button class="qty-btn btn btn-secondary" onclick="chooseQty(1, this)">1</button>
+    <button class="qty-btn btn btn-secondary" onclick="chooseQty(2, this)">2</button>
+    <button class="qty-btn btn btn-secondary" onclick="chooseQty(3, this)">3</button>
+    <button class="qty-btn btn btn-secondary" onclick="chooseQty(4, this)">4</button>
+    <button class="qty-btn btn btn-secondary" onclick="chooseQty(5, this)">5</button>
+  </div>
+</div>
+
   <!-- ZONE MAP -->
   <div class="venue-wrapper">
     <div class="stage-label">◀&nbsp;&nbsp;STAGE&nbsp;&nbsp;▶</div>
     <div class="venue-map">
       <div class="zone-row">
         <button class="zone-btn zone-rock" id="btn-rock" onclick="selectZone('rock', this)">
-          <span class="zn">🔥 Rock Zone</span><span class="zp">RM 599 · Standing</span>
+          <span class="zn">Rock Zone</span><span class="zp">RM 599 · Standing</span>
         </button>
       </div>
       <div class="zone-row">
@@ -207,18 +232,47 @@
   let activeSeat = null;
   let sessionId = localStorage.getItem("session_id") || crypto.randomUUID();
   localStorage.setItem("session_id", sessionId);
+  let selectedDate = null;
+  let selectedQty = 1;
 
   window.onload = function() {
     document.getElementById("ev-label").textContent = localStorage.getItem("selected_event") || "";
     document.getElementById("dt-label").textContent  = localStorage.getItem("selected_date")  || "";
 
+    localStorage.setItem("selected_date", "22 Nov 2026 (Saturday)");
+
     let pattern = localStorage.getItem("fyp_pattern") || "H";
     if (!pattern.includes("A")) { pattern += "A"; localStorage.setItem("fyp_pattern", pattern); }
 
-    // Record qty speed start point
-    localStorage.setItem("qty_speed_start", Date.now());
+    
   };
 
+  function chooseDate(dateStr, el) {
+    document.querySelectorAll('.date-card').forEach(c => c.classList.remove('active-card'));
+    el.classList.add('active-card');
+    selectedDate = dateStr;
+    localStorage.setItem('selected_date', dateStr);
+
+    localStorage.setItem('qty_speed_start', Date.now());
+
+    // Show qty picker after date chosen
+    document.getElementById('qty-section').style.display = 'block';
+
+    // Update pattern
+    let pattern = localStorage.getItem('fyp_pattern') || 'HA';
+    if (!pattern.includes('D')) { pattern += 'D'; localStorage.setItem('fyp_pattern', pattern); }
+    }
+
+    function chooseQty(qty, el) {
+    document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('btn-primary'));
+    el.classList.add('btn-primary');
+    selectedQty = qty;
+    localStorage.setItem('selected_qty', qty);
+
+    // Track speed
+    const qtyStart = parseInt(localStorage.getItem('qty_speed_start') || Date.now());
+    localStorage.setItem('qty_select_speed', Date.now() - qtyStart);
+    }
   function selectZone(zone, btn) {
     // pattern tracking
     let pattern = localStorage.getItem("fyp_pattern") || "HA";
@@ -354,10 +408,11 @@
   }
 
   function goNext() {
+    if (!selectedDate) { alert("Please select a date first."); return; }
     if (!activeSeat) { alert("Please select a seat first."); return; }
-    let pattern = localStorage.getItem("fyp_pattern") || "HADSS";
-    if (!pattern.includes("Q")) { pattern += "Q"; localStorage.setItem("fyp_pattern", pattern); }
-    window.location.href = "confirm.html";
+    let pattern = localStorage.getItem('fyp_pattern') || 'HADSS';
+    if (!pattern.includes('Q')) { pattern += 'Q'; localStorage.setItem('fyp_pattern', pattern); }
+    window.location.href = 'confirm.html';
   }
 </script>
 </body>

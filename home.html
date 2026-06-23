@@ -373,6 +373,8 @@
             localStorage.removeItem('fyp_mouse_moves');
             localStorage.removeItem('session_start');
             localStorage.removeItem('qty_select_speed');
+            
+            localStorage.setItem('session_id', crypto.randomUUID());
 
             if(!localStorage.getItem('start_time')){
                 localStorage.setItem('start_time', Date.now());

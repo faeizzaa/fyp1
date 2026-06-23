@@ -252,9 +252,21 @@
 
             } else {
 
+                // Confirm seat as sold before going to success
+                const zone = localStorage.getItem('selected_zone');
+                const seatId = localStorage.getItem('selected_seat_id');
+                const sessionId = localStorage.getItem('session_id');
+
+                if (zone && seatId && sessionId) {
+                    fetch(`${NGROK_URL}/seats/${zone}/confirm`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+                    }).catch(() => {});
+                }
+
                 alert("Payment authorized successfully! Preparing your booking details...");
                 window.location.href = 'success.html';
-
             }
 
         })
