@@ -5,265 +5,185 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tickago | Ticket to Go</title>
     <link rel="stylesheet" href="style.css">
-    
     <style>
-        /* Modern Soft Theme Overrides */
+        * { box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #fdf6f0 0%, #f4f0fd 50%, #eef7fc 100%);
-            background-attachment: fixed;
-            color: #334155;
+            background: #f4f3fb;
+            color: #1a1035;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
         }
 
-        .main-showcase {
-            background: linear-gradient(135deg, #fff2f2 0%, #f6eaff 100%);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 24px;
-            padding: 50px 30px;
+        /* NAV */
+        .t-nav {
+            background: #0f1115;
+            padding: 0 32px;
+            height: 62px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .t-nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .t-nav-logo {
+            width: 34px; height: 34px;
+            background: #6c5ce7;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 800; font-size: 15px;
+        }
+        .t-nav-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
+        .t-nav-name span { color: #a29bfe; }
+        .t-nav-right { display: flex; gap: 8px; align-items: center; }
+        .t-pill {
+            color: #aaa; font-size: 0.78rem; padding: 5px 14px;
+            border-radius: 20px; border: 0.5px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+        }
+        .t-pill-live {
+            background: #6c5ce7; color: #fff;
+            font-size: 0.78rem; font-weight: 700;
+            padding: 5px 14px; border-radius: 20px; border: none;
+        }
+
+        /* HERO */
+        .t-hero {
+            background: linear-gradient(135deg, #1a1035 0%, #0f1115 70%);
+            padding: 56px 32px 48px;
             text-align: center;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 10px 25px rgba(165, 148, 194, 0.1);
-            margin-bottom: 45px;
         }
-
-        .main-showcase h1 {
-            font-size: 2.6rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            background: linear-gradient(45deg, #6c5ce7, #ff7675);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 12px;
-            position: relative;
-            z-index: 2;
+        .t-hero::before {
+            content: '';
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(108,92,231,0.18) 0%, transparent 70%);
+            pointer-events: none;
         }
-
-        .main-showcase p {
-            font-size: 1.1rem;
-            color: #748da6;
-            max-width: 520px;
-            margin: 0 auto 25px auto;
-            line-height: 1.6;
-            position: relative;
-            z-index: 2;
+        .t-hero-eyebrow {
+            display: inline-block;
+            background: rgba(108,92,231,0.2);
+            color: #a29bfe;
+            font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 2px; text-transform: uppercase;
+            padding: 5px 16px; border-radius: 20px;
+            border: 0.5px solid rgba(108,92,231,0.4);
+            margin-bottom: 18px;
         }
-
-        .scroll-trigger {
-            background: #6c5ce7;
-            color: #ffffff;
-            font-weight: 700;
-            font-size: 0.95rem;
-            padding: 14px 32px;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.25);
-            position: relative;
-            z-index: 2;
+        .t-hero h1 {
+            font-size: 2.4rem; font-weight: 800; color: #fff;
+            margin: 0 0 12px; line-height: 1.15; letter-spacing: -0.5px;
         }
-
-        .scroll-trigger:hover {
-            background: #5b4cc4;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+        .t-hero h1 span { color: #a29bfe; }
+        .t-hero p {
+            color: #8b9bb4; font-size: 0.95rem;
+            max-width: 440px; margin: 0 auto 28px; line-height: 1.6;
         }
-
-        .section-title {
-            text-align: center;
-            font-size: 1.65rem;
-            font-weight: 700;
-            margin-bottom: 5px;
-            color: #4d446c;
-            letter-spacing: -0.5px;
+        .t-hero-btn {
+            background: #6c5ce7; color: #fff;
+            border: none; padding: 13px 32px;
+            border-radius: 50px; font-weight: 700; font-size: 0.95rem;
+            cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(108,92,231,0.35);
         }
+        .t-hero-btn:hover { background: #5b4cc4; transform: translateY(-2px); }
 
-        .section-subtitle {
-            text-align: center;
-            font-size: 0.95rem;
-            color: #748da6;
-            margin-bottom: 35px;
+        /* EVENTS SECTION */
+        .t-section { max-width: 780px; margin: 0 auto; padding: 36px 24px 60px; }
+        .t-section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+        .t-section-head h2 { font-size: 1.3rem; font-weight: 700; color: #1a1035; }
+        .t-live-badge {
+            background: #ff7675; color: #fff;
+            font-size: 0.65rem; font-weight: 800;
+            padding: 3px 9px; border-radius: 10px; letter-spacing: 0.5px;
         }
+        .t-section-sub { color: #748da6; font-size: 0.88rem; margin-bottom: 24px; }
 
-        .concert-shelf {
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-            margin-bottom: 50px;
-        }
-
-        /* CARD CONTAINER */
+        /* CONCERT CARD */
+        .concert-shelf { display: flex; flex-direction: column; gap: 14px; }
         .concert-card {
             position: relative;
-            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 18px;
-            display: flex;
-            align-items: center;
+            display: flex; align-items: center;
             overflow: hidden;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); 
+            border: 1px solid rgba(255,255,255,0.08);
             transition: all 0.25s ease;
+            min-height: 96px;
         }
-
-        /* CARD BACKGROUND */
+        .concert-card:hover:not(.locked) { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(108,92,231,0.25); }
+        .concert-card.locked { cursor: not-allowed; opacity: 0.45; filter: grayscale(75%); }
         .card-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-            filter: blur(3.5px) brightness(0.42);
-            transform: scale(1.08);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center;
+            filter: blur(3px) brightness(0.38); transform: scale(1.06);
             z-index: 1;
         }
-
-        /* CARD CONTENT WRAPPER */
-        .card-content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-
-        .concert-card:hover:not(.locked) {
-            transform: translateY(-4px);
-            border-color: #6c5ce7;
-            box-shadow: 0 8px 25px rgba(108, 92, 231, 0.25);
-        }
-
-        /* SPECIFIC DESIGN STYLES FOR LOCKED OUT/SOLD OUT TRACKS */
-        .concert-card.locked {
-            cursor: not-allowed;
-            opacity: 0.55;
-            filter: grayscale(80%);
-        }
-
-        .concert-card.locked .action-btn {
-            background: rgba(255, 255, 255, 0.05) !important;
-            color: #94a3b8 !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-            cursor: not-allowed;
-        }
-
-        /* Left Side Date Block */
+        .card-content { position: relative; z-index: 2; display: flex; align-items: center; width: 100%; }
         .card-date-block {
-            background: rgba(255, 255, 255, 0.15); 
+            background: rgba(255,255,255,0.1);
             backdrop-filter: blur(4px);
-            border-right: 2px dashed rgba(255, 255, 255, 0.3);
-            padding: 22px;
-            min-width: 80px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+            border-right: 1px dashed rgba(255,255,255,0.2);
+            padding: 20px 16px;
+            min-width: 76px; text-align: center;
         }
-
-        .card-date-block .month {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            color: #ffeaa7;
-            font-weight: 700;
-        }
-        
-        .card-date-block .day {
-            font-size: 1.7rem;
-            font-weight: 800;
-            color: #ffffff;
-            line-height: 1.1;
-            margin: 4px 0;
-        }
-
-        .card-date-block .time {
-            font-size: 0.7rem;
-            background: rgba(255, 255, 255, 0.25);
-            padding: 3px 7px;
-            border-radius: 6px;
-            color: #ffffff;
-            font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        /* Center Details Content */
-        .concert-info {
-            padding: 20px 24px;
-            flex-grow: 1;
-        }
-
-        .concert-info .category {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: #ff7675;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 4px;
-        }
-
-        .concert-info h3 {
-            margin: 0 0 6px 0;
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        }
-
-        .concert-info p {
-            margin: 0;
-            font-size: 0.9rem;
-            color: #e2e8f0;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-        }
-
-        .action-area {
-            padding: 20px 24px;
-        }
-
-        /* Action Button Layout */
+        .card-date-block .month { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 1.5px; color: #ffeaa7; font-weight: 700; }
+        .card-date-block .day { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1.1; margin: 3px 0; }
+        .card-date-block .time { font-size: 0.62rem; background: rgba(255,255,255,0.18); padding: 2px 6px; border-radius: 5px; color: #fff; font-weight: 600; }
+        .concert-info { padding: 18px 20px; flex-grow: 1; }
+        .concert-info .category { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 4px; }
+        .concert-info h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 700; color: #fff; }
+        .concert-info p { margin: 0; font-size: 0.82rem; color: #cbd5e1; }
+        .action-area { padding: 18px 20px; }
         .action-btn {
-            background: rgba(255, 255, 255, 0.2); 
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(4px);
-            padding: 10px 20px;
-            border-radius: 50px; 
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
+            background: rgba(255,255,255,0.18); color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(4px); padding: 9px 18px;
+            border-radius: 50px; font-weight: 700; font-size: 0.82rem;
+            cursor: pointer; transition: all 0.2s; white-space: nowrap;
         }
-
         .concert-card:hover:not(.locked) .action-btn {
-            background: #ffffff;
-            color: #6c5ce7;
-            border-color: #ffffff;
-            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+            background: #fff; color: #6c5ce7; border-color: #fff;
+        }
+        .concert-card.locked .action-btn {
+            background: rgba(255,255,255,0.05); color: #555;
+            border-color: rgba(255,255,255,0.08); cursor: not-allowed;
         }
     </style>
 </head>
 <body>
 
-    <div class="container" style="max-width: 780px; padding: 40px 20px; margin: 0 auto;">
-        
-        <div class="main-showcase">
-            <h1>Connect with Live Music</h1>
-            <p>Skip the stress. Find your perfect concert whenever you are.</p>
-            <button class="scroll-trigger" onclick="scrollToEvents()">
-                Get Tickets ➔
-            </button>
+    <nav class="t-nav">
+        <div class="t-nav-brand">
+            <div class="t-nav-logo">T</div>
+            <span class="t-nav-name">Ticka<span>go</span></span>
         </div>
+        <div class="t-nav-right">
+            <span class="t-pill">My Tickets</span>
+            <span class="t-pill-live">Live Now</span>
+        </div>
+    </nav>
 
-        <div id="events-section" class="section-title">On Sale Now</div>
-        <div class="section-subtitle">Select an event below to purchase your tickets.</div>
-        
+    <div class="t-hero">
+        <div class="t-hero-eyebrow">Official Ticketing Partner</div>
+        <h1>Your next <span>live experience</span><br>awaits.</h1>
+        <p>Secure your spot before it's gone. Verified tickets, zero markup.</p>
+        <button class="t-hero-btn" onclick="scrollToEvents()">Browse Events ↓</button>
+    </div>
+
+    <div class="t-section">
+        <div id="events-section" class="t-section-head">
+            <h2>On Sale Now</h2>
+            <span class="t-live-badge">LIVE</span>
+        </div>
+        <p class="t-section-sub">Select an event below to join the queue and purchase your tickets.</p>
+
         <div class="concert-shelf">
-            
+
             <div class="concert-card" id="stray-kids-card" onclick="selectEvent('Stray Kids World Tour KARMA')">
                 <div class="card-bg" style="background-image: url('pic/StrayKids_CourtesyofJYPEntertainment_August2025-Header.webp');"></div>
                 <div class="card-content">
@@ -273,12 +193,12 @@
                         <div class="time">8:00 PM</div>
                     </div>
                     <div class="concert-info">
-                        <div class="category" style="color:#2ecc71; font-weight:800;">Selling Fast</div>
+                        <div class="category" style="color:#2ecc71;">Selling Fast</div>
                         <h3>Stray Kids World Tour "KARMA"</h3>
                         <p>TM Stadium Nasional</p>
                     </div>
                     <div class="action-area">
-                        <button class="action-btn" style="background:#6c5ce7; border-color:#6c5ce7;">Get Tickets</button>
+                        <button class="action-btn" style="background:#6c5ce7;border-color:#6c5ce7;">Get Tickets</button>
                     </div>
                 </div>
             </div>
@@ -292,13 +212,11 @@
                         <div class="time">8:00 PM</div>
                     </div>
                     <div class="concert-info">
-                        <div class="category">Concert</div>
+                        <div class="category" style="color:#888;">Concert</div>
                         <h3>Taylor Swift: Eras Return</h3>
                         <p>Axiata Arena</p>
                     </div>
-                    <div class="action-area">
-                        <button class="action-btn" disabled>Sold Out</button>
-                    </div>
+                    <div class="action-area"><button class="action-btn" disabled>Sold Out</button></div>
                 </div>
             </div>
 
@@ -311,13 +229,11 @@
                         <div class="time">8:30 PM</div>
                     </div>
                     <div class="concert-info">
-                        <div class="category">Concert</div>
+                        <div class="category" style="color:#888;">Concert</div>
                         <h3>Bruno Mars: Live in KL</h3>
                         <p>Stadium Merdeka</p>
                     </div>
-                    <div class="action-area">
-                        <button class="action-btn" disabled>Sold Out</button>
-                    </div>
+                    <div class="action-area"><button class="action-btn" disabled>Sold Out</button></div>
                 </div>
             </div>
 
@@ -330,13 +246,11 @@
                         <div class="time">7:00 PM</div>
                     </div>
                     <div class="concert-info">
-                        <div class="category">K-Pop</div>
+                        <div class="category" style="color:#888;">K-Pop</div>
                         <h3>IU: H.E.R. World Tour</h3>
                         <p>Axiata Arena</p>
                     </div>
-                    <div class="action-area">
-                        <button class="action-btn" disabled>Unavailable</button>
-                    </div>
+                    <div class="action-area"><button class="action-btn" disabled>Unavailable</button></div>
                 </div>
             </div>
 
@@ -349,13 +263,11 @@
                         <div class="time">8:00 PM</div>
                     </div>
                     <div class="concert-info">
-                        <div class="category">Rock</div>
+                        <div class="category" style="color:#888;">Rock</div>
                         <h3>Linkin Park: From Zero Tour</h3>
                         <p>Stadium Nasional Bukit Jalil</p>
                     </div>
-                    <div class="action-area">
-                        <button class="action-btn" disabled>Unavailable</button>
-                    </div>
+                    <div class="action-area"><button class="action-btn" disabled>Unavailable</button></div>
                 </div>
             </div>
 
@@ -364,7 +276,6 @@
 
     <script>
         window.onload = function() {
-            // Clear any leftover booking state from a previous session
             localStorage.removeItem('selected_event');
             localStorage.removeItem('selected_date');
             localStorage.removeItem('selected_seat');
@@ -373,18 +284,10 @@
             localStorage.removeItem('fyp_mouse_moves');
             localStorage.removeItem('session_start');
             localStorage.removeItem('qty_select_speed');
-            
             localStorage.setItem('session_id', crypto.randomUUID());
-
-            if(!localStorage.getItem('start_time')){
-                localStorage.setItem('start_time', Date.now());
-            }
-            
+            if(!localStorage.getItem('start_time')){ localStorage.setItem('start_time', Date.now()); }
             let pattern = localStorage.getItem('fyp_pattern') || "";
-            if (!pattern.includes('H')) {
-                pattern = "H" + pattern;
-                localStorage.setItem('fyp_pattern', pattern);
-            }
+            if (!pattern.includes('H')) { pattern = "H" + pattern; localStorage.setItem('fyp_pattern', pattern); }
         };
 
         function scrollToEvents() {
@@ -393,10 +296,7 @@
 
         function selectEvent(eventName) {
             let pattern = localStorage.getItem('fyp_pattern') || "H";
-            if (!pattern.includes('A')) {
-                pattern += "A"; 
-            }
-            
+            if (!pattern.includes('A')) { pattern += "A"; }
             localStorage.setItem('selected_event', eventName);
             localStorage.setItem('fyp_pattern', pattern);
             window.location.href = 'waitingroom.html';
