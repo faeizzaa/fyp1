@@ -21,8 +21,7 @@ def run_single_bot(target_url, screen_position):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     profile_dir = os.path.join(base_dir, "chrome_sandbox_profile_bot1")
 
-    chrome_options.binary_location = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
-
+    chrome_options.binary_location = "/usr/bin/google-chrome"
     if os.path.exists(profile_dir):
         shutil.rmtree(profile_dir, ignore_errors=True)
 
@@ -35,11 +34,15 @@ def run_single_bot(target_url, screen_position):
     chrome_options.add_argument("--disable-background-timer-throttling")
     chrome_options.add_argument("--disable-features=CalculateNativeWinOcclusion")
 
-    try:
-        driver = webdriver.Chrome(options=chrome_options)
-    except Exception as e:
-        print(f"[Bot1] Driver Crash: {e}")
-        return
+        from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+driver = webdriver.Chrome(
+    service=Service(
+        ChromeDriverManager().install()
+    ),
+    options=chrome_options
+)
 
     x_pos, y_pos, width, height = screen_position
     driver.set_window_position(x_pos, y_pos)
