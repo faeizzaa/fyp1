@@ -179,9 +179,15 @@ def get_seats(zone):
     response.headers["Access-Control-Allow-Origin"] = "*"
     return response
 
-@app.route('/seats/<zone>/reserve', methods=['POST'])
+@app.route('/seats/<zone>/reserve', methods=['POST', 'OPTIONS'])
 def reserve_seat(zone):
-    """Reserve a seat (put on hold) for a session."""
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        return response
+
     data = request.get_json() or {}
     seat_id = data.get("seat_id")
     session_id = data.get("session_id")
@@ -203,11 +209,18 @@ def reserve_seat(zone):
     print(f"[Seat] Reserved: {zone}/{seat_id} by session {session_id[:12]}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "zone": zone}))
     response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
-
-@app.route('/seats/<zone>/confirm', methods=['POST'])
+    
+@app.route('/seats/<zone>/confirm', methods=['POST', 'OPTIONS'])
 def confirm_seat(zone):
-    """Mark seat as sold after successful payment."""
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        return response
+
     data = request.get_json() or {}
     seat_id = data.get("seat_id")
     session_id = data.get("session_id")
@@ -225,11 +238,18 @@ def confirm_seat(zone):
     print(f"[Seat] Sold: {zone}/{seat_id}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "sold"}))
     response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
 
-@app.route('/seats/<zone>/release', methods=['POST'])
+@app.route('/seats/<zone>/release', methods=['POST', 'OPTIONS'])
 def release_seat(zone):
-    """Manually release a reserved seat (user abandoned cart)."""
+    if request.method == 'OPTIONS':
+        response = make_response()
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        return response
+
     data = request.get_json() or {}
     seat_id = data.get("seat_id")
     session_id = data.get("session_id")
@@ -249,8 +269,9 @@ def release_seat(zone):
     print(f"[Seat] Released: {zone}/{seat_id}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "available"}))
     response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
-
+    
 @app.route('/seats/admin/<zone>', methods=['GET'])
 def admin_seats(zone):
     """Admin view — shows real status (available/reserved/sold) with timestamps."""
