@@ -128,17 +128,26 @@
     <strong id="ev-label"></strong>&nbsp;·&nbsp;<span id="dt-label"></span>
   </p>
 
-  <!-- DATE SELECTION -->
+<!-- DATE SELECTION -->
 <h2 style="text-align:left; margin-bottom:10px;">Select Date</h2>
-<div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
-  <div class="date-card" id="date1-card" onclick="chooseDate('22 Nov 2026 (Day 1 - Saturday)', this)">
-    <div><strong>22 Nov 2026</strong><br><small>Day 1 — Saturday</small></div>
-    <span class="badge">Available</span>
+<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+
+  <div class="date-card" id="date1-card" onclick="chooseDate('22 Nov 2026 (Day 1 - Saturday)', this)"
+    style="flex:1; min-width:140px; background:linear-gradient(135deg,#1a1a2e,#16213e); border:2px solid #333; border-radius:14px; padding:16px; cursor:pointer; transition:all 0.2s;">
+    <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#f5c518; font-weight:700; margin-bottom:6px;">Day 1</div>
+    <div style="font-size:20px; font-weight:800; color:white;">22 Nov</div>
+    <div style="font-size:12px; color:#aaa; margin-bottom:10px;">Saturday · 2026</div>
+    <span style="background:#27ae60; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">● Available</span>
   </div>
-  <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)">
-    <div><strong>23 Nov 2026</strong><br><small>Day 2 — Sunday</small></div>
-    <span class="badge">Available</span>
+
+  <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)"
+    style="flex:1; min-width:140px; background:linear-gradient(135deg,#1a1a2e,#16213e); border:2px solid #333; border-radius:14px; padding:16px; cursor:pointer; transition:all 0.2s;">
+    <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#f5c518; font-weight:700; margin-bottom:6px;">Day 2</div>
+    <div style="font-size:20px; font-weight:800; color:white;">23 Nov</div>
+    <div style="font-size:12px; color:#aaa; margin-bottom:10px;">Sunday · 2026</div>
+    <span style="background:#27ae60; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">● Available</span>
   </div>
+
 </div>
 
   <!-- ZONE MAP -->
