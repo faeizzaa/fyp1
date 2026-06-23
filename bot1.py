@@ -35,13 +35,18 @@ def run_single_bot(target_url, screen_position):
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-background-timer-throttling")
     chrome_options.add_argument("--disable-features=CalculateNativeWinOcclusion")
-    
-driver = webdriver.Chrome(
-    service=Service(
-        ChromeDriverManager().install()
-    ),
-    options=chrome_options
-)
+
+    try:
+        driver = webdriver.Chrome(
+            service=Service(
+                ChromeDriverManager().install()
+            ),
+            options=chrome_options
+        )
+    except Exception as init_err:
+        print(f"❌ [Bot1] Driver Crash: {init_err}")
+        return
+
 
     x_pos, y_pos, width, height = screen_position
     driver.set_window_position(x_pos, y_pos)
