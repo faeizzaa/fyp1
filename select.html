@@ -394,6 +394,29 @@
     }
 }
 
+  function updateSummary() {
+    const count = selectedSeats.length;
+    if (count === 0) {
+        document.getElementById("summary-bar").classList.remove("visible");
+        return;
+    }
+
+    const total = ZONE_META[activeZone].price * count;
+    localStorage.setItem("selected_qty", count);
+    localStorage.setItem("selected_seat_id", selectedSeats.join(","));
+    localStorage.setItem("selected_zone", activeZone);
+    localStorage.setItem("selected_seat", ZONE_META[activeZone].label + " - RM " + ZONE_META[activeZone].price);
+
+    // qty speed on first seat pick
+    const qtyStart = parseInt(localStorage.getItem("qty_speed_start") || Date.now());
+    localStorage.setItem("qty_select_speed", Date.now() - qtyStart);
+
+    document.getElementById("sum-seat").textContent = "Seats: " + selectedSeats.join(", ") + " (" + count + "/" + MAX_SEATS + ")";
+    document.getElementById("sum-zone").textContent = ZONE_META[activeZone].label;
+    document.getElementById("sum-price").textContent = "RM " + total;
+    document.getElementById("summary-bar").classList.add("visible");
+}
+
   function goNext() {
     if (!selectedDate) { alert("Please select a date first."); return; }
     if (selectedSeats.length === 0) { alert("Please select at least one seat."); return; }
