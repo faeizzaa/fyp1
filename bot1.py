@@ -9,6 +9,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # Bot 1 — Tier 1 trigger
 # Behaviour: Fast single-seat purchase, no mouse moves
@@ -33,10 +35,7 @@ def run_single_bot(target_url, screen_position):
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument("--disable-background-timer-throttling")
     chrome_options.add_argument("--disable-features=CalculateNativeWinOcclusion")
-
-        from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
-
+    
 driver = webdriver.Chrome(
     service=Service(
         ChromeDriverManager().install()
