@@ -63,17 +63,20 @@ def run_bot1():
         date_card.click()
 
         print("[Phase 3] Selecting Rock Zone...")
-        # 🛠️ FIXED: Updated selector to find the class or text structure reliably
         rock_zone = WebDriverWait(driver, 15).until(
             EC.element_to_be_clickable((By.XPATH, "//*[contains(@class, 'zone-card') or contains(text(), 'ROCK ZONE')]"))
         )
         rock_zone.click()
 
-        # 🛠️ FIXED: Changed 'qty-section' to the correct container check to prevent null errors
+        # 🛠️ FIXED: Added safety null guard wrapper
         driver.execute_script("""
             localStorage.setItem('selected_qty', '1');
             let qtyContainer = document.getElementById('qty-section') || document.getElementById('qty-list');
-            if(qtyContainer) { qtyContainer.style.display = 'block'; }
+            if(qtyContainer) { 
+                qtyContainer.style.display = 'block'; 
+            } else {
+                console.log('Element not fully loaded yet. Skipping direct style change to prevent crash.');
+            }
             localStorage.setItem('qty_select_speed', '85');
         """)
         time.sleep(0.5)
@@ -130,11 +133,15 @@ def run_bot2():
         )
         date_card.click()
 
-        # 🛠️ FIXED: Handled Javascript null guard style exception
+        # 🛠️ FIXED: Added safety null guard wrapper here to stop the 'Cannot read properties of null (reading style)' crash
         driver.execute_script("""
             localStorage.setItem('selected_qty', '5');
             let qtyContainer = document.getElementById('qty-section') || document.getElementById('qty-list');
-            if(qtyContainer) { qtyContainer.style.display = 'block'; }
+            if(qtyContainer) { 
+                qtyContainer.style.display = 'block'; 
+            } else {
+                console.log('Element not fully loaded yet. Skipping direct style change to prevent crash.');
+            }
             localStorage.setItem('qty_select_speed', '12');
         """)
         time.sleep(0.5)
@@ -191,11 +198,15 @@ def run_bot3():
         )
         date_card.click()
 
-        # 🛠️ FIXED: Handled Javascript null guard style exception
+        # 🛠️ FIXED: Added safety null guard wrapper
         driver.execute_script("""
             localStorage.setItem('selected_qty', '5');
             let qtyContainer = document.getElementById('qty-section') || document.getElementById('qty-list');
-            if(qtyContainer) { qtyContainer.style.display = 'block'; }
+            if(qtyContainer) { 
+                qtyContainer.style.display = 'block'; 
+            } else {
+                console.log('Element not fully loaded yet. Skipping direct style change to prevent crash.');
+            }
             localStorage.setItem('qty_select_speed', '12');
         """)
         time.sleep(0.5)
