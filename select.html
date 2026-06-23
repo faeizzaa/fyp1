@@ -141,18 +141,6 @@
   </div>
 </div>
 
-<!-- QUANTITY PICKER -->
-<div id="qty-section" style="display:none; margin-bottom:20px; text-align:left;">
-  <h2 style="margin-bottom:10px;">Number of Tickets</h2>
-  <div style="display:flex; gap:8px; flex-wrap:wrap;">
-    <button class="qty-btn btn btn-secondary" onclick="chooseQty(1, this)">1</button>
-    <button class="qty-btn btn btn-secondary" onclick="chooseQty(2, this)">2</button>
-    <button class="qty-btn btn btn-secondary" onclick="chooseQty(3, this)">3</button>
-    <button class="qty-btn btn btn-secondary" onclick="chooseQty(4, this)">4</button>
-    <button class="qty-btn btn btn-secondary" onclick="chooseQty(5, this)">5</button>
-  </div>
-</div>
-
   <!-- ZONE MAP -->
   <div class="venue-wrapper">
     <div class="stage-label">◀&nbsp;&nbsp;STAGE&nbsp;&nbsp;▶</div>
@@ -229,7 +217,7 @@
   const COLS = 10;
 
   let activeZone = null;
-  let activeSeat = null;
+  //let activeSeat = null;
   let sessionId = localStorage.getItem("session_id") || crypto.randomUUID();
   localStorage.setItem("session_id", sessionId);
   let selectedDate = null;
@@ -296,18 +284,18 @@
   }
 
   function backToZones() {
-    if (activeSeat && activeZone) {
-      fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seat_id: activeSeat, session_id: sessionId })
-      }).catch(() => {});
-    }
+    selectedSeats.forEach(seatId => {
+        fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+        }).catch(() => {});
+    });
+    selectedSeats = [];
     document.getElementById("seat-section").style.display = "none";
     document.getElementById("summary-bar").classList.remove("visible");
-    activeZone = null; activeSeat = null;
-  }
-
+    activeZone = null;
+}
   async function loadSeats(zone) {
     const wrap = document.getElementById("seat-grid-wrap");
     wrap.innerHTML = '<div class="seat-loading">Loading seats...</div>';
@@ -352,68 +340,67 @@
     wrap.appendChild(grid);
   }
 
+  const MAX_SEATS = 5;
+  let selectedSeats = [];
+  
   async function pickSeat(seatId, btn) {
-    // Release previous hold
-    if (activeSeat && activeSeat !== seatId) {
-      await fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seat_id: activeSeat, session_id: sessionId })
-      }).catch(() => {});
-      const prev = document.querySelector('.seat[data-sid="' + activeSeat + '"]');
-      if (prev) prev.className = "seat available";
+    // If already selected — deselect it
+    if (selectedSeats.includes(seatId)) {
+        await fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+        }).catch(() => {});
+        selectedSeats = selectedSeats.filter(s => s !== seatId);
+        btn.className = "seat available";
+        btn.onclick = () => pickSeat(seatId, btn);
+        updateSummary();
+        return;
     }
 
-    // Reserve new seat
-    try {
-      const res  = await fetch(NGROK_URL + "/seats/" + activeZone + "/reserve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
-      });
-      const data = await res.json();
-
-      if (!data.success) {
-        alert("That seat was just taken — please pick another.");
-        btn.className = "seat unavailable";
-        btn.disabled = true;
+    // Max limit check
+    if (selectedSeats.length >= MAX_SEATS) {
+        alert("Maximum " + MAX_SEATS + " tickets per customer.");
         return;
-      }
+    }
 
-      activeSeat = seatId;
-      btn.className = "seat selected";
+    try {
+        const res = await fetch(NGROK_URL + "/seats/" + activeZone + "/reserve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+        });
+        const data = await res.json();
 
-      // Pattern tracking — S per seat pick, max 3
-      let pattern = localStorage.getItem("fyp_pattern") || "HAD";
-      let sCount  = (pattern.match(/S/g) || []).length;
-      if (sCount < 3) { pattern += "S"; localStorage.setItem("fyp_pattern", pattern); }
+        if (!data.success) {
+            alert("That seat was just taken — please pick another.");
+            btn.className = "seat unavailable";
+            btn.disabled = true;
+            return;
+        }
 
-      // Qty speed tracking
-      const qtyStart = parseInt(localStorage.getItem("qty_speed_start") || Date.now());
-      localStorage.setItem("qty_select_speed", Date.now() - qtyStart);
+        selectedSeats.push(seatId);
+        btn.className = "seat selected";
 
-      localStorage.setItem("selected_seat",    ZONE_META[activeZone].label + " - RM " + ZONE_META[activeZone].price);
-      localStorage.setItem("selected_seat_id", seatId);
-      localStorage.setItem("selected_zone",    activeZone);
-      localStorage.setItem("selected_qty",     "1");
+        // Pattern tracking
+        let pattern = localStorage.getItem("fyp_pattern") || "HAD";
+        let sCount = (pattern.match(/S/g) || []).length;
+        if (sCount < 3) { pattern += "S"; localStorage.setItem("fyp_pattern", pattern); }
 
-      document.getElementById("sum-seat").textContent  = "Seat " + seatId;
-      document.getElementById("sum-zone").textContent  = ZONE_META[activeZone].label;
-      document.getElementById("sum-price").textContent = "RM " + ZONE_META[activeZone].price;
-      document.getElementById("summary-bar").classList.add("visible");
+        updateSummary();
 
     } catch(e) {
-      alert("Could not reserve seat. Please try again.");
+        alert("Could not reserve seat. Please try again.");
     }
-  }
+}
 
   function goNext() {
     if (!selectedDate) { alert("Please select a date first."); return; }
-    if (!activeSeat) { alert("Please select a seat first."); return; }
+    if (selectedSeats.length === 0) { alert("Please select at least one seat."); return; }
     let pattern = localStorage.getItem('fyp_pattern') || 'HADSS';
     if (!pattern.includes('Q')) { pattern += 'Q'; localStorage.setItem('fyp_pattern', pattern); }
     window.location.href = 'confirm.html';
-  }
+}
 </script>
 </body>
 </html>
