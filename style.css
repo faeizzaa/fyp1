@@ -1,14 +1,14 @@
 body { 
     font-family: 'Segoe UI', Arial, sans-serif; 
-    background-color: #f4f7f6; 
+    background-color: #f4f3fb; 
     color: #333; 
     margin: 0; 
-    padding: 40px; 
+    padding: 0; 
 }
 
 .container { 
     max-width: 600px; 
-    margin: 40px auto; 
+    margin: 32px auto; 
     background: white; 
     padding: 30px; 
     border-radius: 12px; 
@@ -73,8 +73,8 @@ p { color: #666; line-height: 1.5; }
     font-weight: 600;
 }
 
-.stepper-item.active .step-counter { background-color: #007bff; border-color: #007bff; color: #fff; }
-.stepper-item.active .step-name { color: #007bff; font-weight: bold; }
+.stepper-item.active .step-counter { background-color: #6c5ce7; border-color: #6c5ce7; color: #fff; }
+.stepper-item.active .step-name { color: #6c5ce7; font-weight: bold; }
 .stepper-item.completed .step-counter { background-color: #28a745; border-color: #28a745; color: #fff; }
 .stepper-item.completed .step-name { color: #28a745; }
 
@@ -95,7 +95,7 @@ p { color: #666; line-height: 1.5; }
 .form-group label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
 .form-group input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; }
 .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; font-weight: bold; text-decoration: none; display: inline-block; }
-.btn-primary { background: #007bff; color: white; }
+.btn-primary { background: #6c5ce7; color: white; }
 .btn-secondary { background: #e9ecef; color: #495057; border: 1px solid #ced4da; }
 .btn-danger { background: #dc3545; color: white; }
 .btn-checkout { background: #28a745; color: white; width: 100%; font-size: 1.1rem; padding: 12px; }
@@ -117,11 +117,11 @@ p { color: #666; line-height: 1.5; }
 
     /* General */
     body {
-        padding: 12px;
+        padding: 0;
     }
 
     .container {
-        margin: 10px auto;
+        margin: 16px auto;
         padding: 16px;
         border-radius: 10px;
     }
