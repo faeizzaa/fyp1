@@ -166,14 +166,22 @@ def run_bot(scenario_num):
         print("[Phase 3] Selecting date...")
         try:
             WebDriverWait(driver, 8).until(
-                EC.element_to_be_clickable((By.ID, "date1-card"))
+            EC.element_to_be_clickable((By.ID, "date1-card"))
             )
-            driver.execute_script("document.getElementById('date1-card').click();")
-            print("[Phase 3] Date 1 clicked.")
+            # Call chooseDate() directly instead of clicking the element
+            driver.execute_script("""
+                chooseDate('22 Nov 2026 (Day 1 - Saturday)', 
+                document.getElementById('date1-card'));
+            """)
+            print("[Phase 3] Date selected via chooseDate().")
             time.sleep(1)
         except TimeoutException:
-            driver.execute_script("localStorage.setItem('selected_date', '22 Nov 2026 (Day 1 - Saturday)');")
-            print("[Phase 3] Date set via localStorage fallback.")
+            # Fallback - set localStorage and selectedDate variable directly
+            driver.execute_script("""
+                localStorage.setItem('selected_date', '22 Nov 2026 (Day 1 - Saturday)');
+                selectedDate = '22 Nov 2026 (Day 1 - Saturday)';
+            """)
+            print("[Phase 3] Date set via fallback.")
 
         print("[Phase 3] Selecting Rock Zone...")
         WebDriverWait(driver, 10).until(
@@ -246,22 +254,32 @@ def run_bot(scenario_num):
 
         time.sleep(1)
 
+
         # Navigate to confirm — use goNext() if available, else direct nav
+        # Force set selectedDate variable before goNext
+        driver.execute_script("""
+            selectedDate = '22 Nov 2026 (Day 1 - Saturday)';
+            localStorage.setItem('selected_date', '22 Nov 2026 (Day 1 - Saturday)');
+            let p = localStorage.getItem('fyp_pattern') || 'HADS';
+            if (!p.includes('Q')) p += 'Q';
+            localStorage.setItem('fyp_pattern', p);
+        """)
+
+        # Navigate to confirm
         go_next_exists = driver.execute_script("return typeof goNext === 'function';")
         if go_next_exists:
-            driver.execute_script("""
-                let p = localStorage.getItem('fyp_pattern') || 'HADS';
-                if (!p.includes('Q')) p += 'Q';
-                localStorage.setItem('fyp_pattern', p);
-                goNext();
-            """)
+            driver.execute_script("goNext();")
         else:
-            driver.execute_script("""
-                let p = localStorage.getItem('fyp_pattern') || 'HADS';
-                if (!p.includes('Q')) p += 'Q';
-                localStorage.setItem('fyp_pattern', p);
-            """)
             driver.get(f"{TARGET_SITE}/confirm.html")
+
+        # Dismiss any unexpected alerts (e.g. "Please select a date first")
+        try:
+            WebDriverWait(driver, 2).until(EC.alert_is_present())
+            unexpected = driver.switch_to.alert
+            print(f"[Phase 3] Unexpected alert: {unexpected.text} — dismissing...")
+            unexpected.accept()
+        except TimeoutException:
+            pass
 
         WebDriverWait(driver, 15).until(EC.url_contains("confirm.html"))
         print("[Phase 3] Proceeded to confirmation.")
