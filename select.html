@@ -58,8 +58,8 @@
     .zone-btn.active { outline: 3px solid #f5c518; outline-offset: 2px; transform: scale(1.04); }
     .zone-btn .zn { font-size: 13px; font-weight: 700; }
     .zone-btn .zp { font-size: 11px; opacity: 0.85; }
-    .zone-rock { background: #c0392b; width: 280px; height: 68px; }
-    .zone-cat1  { background: #8e44ad; width: 200px; height: 62px; }
+    .zone-rock { background: #c0392b; width: 260px; height: 68px; }
+    .zone-cat1  { background: #8e44ad; width: 260px; height: 62px; }
     .zone-cat2  { background: #2980b9; width: 260px; height: 62px; }
     .zone-cat3  { background: #27ae60; width: 125px; height: 62px; }
     .venue-legend {
@@ -146,7 +146,7 @@
     <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#f5c518; font-weight:700; margin-bottom:6px;">Day 1</div>
     <div style="font-size:20px; font-weight:800; color:white;">22 Nov</div>
     <div style="font-size:12px; color:#aaa; margin-bottom:10px;">Saturday · 2026</div>
-    <span style="background:#27ae60; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">● Available</span>
+    <span style="background:#27ae60; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">Available</span>
   </div>
 
   <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)"
@@ -154,18 +154,18 @@
     <div style="font-size:11px; text-transform:uppercase; letter-spacing:2px; color:#f5c518; font-weight:700; margin-bottom:6px;">Day 2</div>
     <div style="font-size:20px; font-weight:800; color:white;">23 Nov</div>
     <div style="font-size:12px; color:#aaa; margin-bottom:10px;">Sunday · 2026</div>
-    <span style="background:#27ae60; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">● Available</span>
+    <span style="background:#27ae60; color:white; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;">Available</span>
   </div>
 
 </div>
 
   <!-- ZONE MAP -->
   <div class="venue-wrapper">
-    <div class="stage-label">◀&nbsp;&nbsp;STAGE&nbsp;&nbsp;▶</div>
+    <div class="stage-label">&nbsp;&nbsp;STAGE&nbsp;&nbsp;</div>
     <div class="venue-map">
       <div class="zone-row">
         <button class="zone-btn zone-rock" id="btn-rock" onclick="selectZone('rock', this)">
-          <span class="zn">Rock Zone</span><span class="zp">RM 599 · Standing</span>
+          <span class="zn">Rock Zone</span><span class="zp">RM 599</span>
         </button>
       </div>
       <div class="zone-row">
@@ -199,14 +199,14 @@
   <div id="seat-section">
     <div class="picker-header">
       <h3 id="picker-title">Select a seat</h3>
-      <button class="back-btn" onclick="backToZones()">← Change zone</button>
+      <button class="back-btn" onclick="backToZones()">Change zone</button>
     </div>
     <div class="screen-bar"></div>
     <div class="screen-txt">STAGE</div>
     <div id="seat-grid-wrap"><div class="seat-loading">Loading seats...</div></div>
     <div class="seat-legend">
       <div class="sl-item"><div class="sl-swatch" style="background:#27ae60"></div>Available</div>
-      <div class="sl-item"><div class="sl-swatch" style="background:#f5c518"></div>Your pick</div>
+      <div class="sl-item"><div class="sl-swatch" style="background:#f5c518"></div>Selected</div>
       <div class="sl-item"><div class="sl-swatch" style="background:#adb5bd"></div>Unavailable</div>
     </div>
   </div>
@@ -218,7 +218,7 @@
       <span id="sum-zone" style="color:#888;font-size:13px"></span>
     </div>
     <div class="sum-price" id="sum-price">RM —</div>
-    <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+    <button class="btn btn-primary" onclick="goNext()">Continue</button>
   </div>
 </div>
 
