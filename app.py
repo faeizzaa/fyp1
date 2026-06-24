@@ -742,6 +742,7 @@ def evaluate_session():
     force_tier = data.get('force_tier')
     ip_address = request.remote_addr
 
+
     if not session_id or session_id not in sessions:
         pattern        = data.get('pattern', '')
         duration       = data.get('duration', 0)
@@ -847,6 +848,31 @@ def evaluate_session():
         score += 50
         reasons.append("Queue gate bypassed (skipped waiting room)")
 
+    # Retrieve previous cumulative score from session or request
+    cumulative_score = int(data.get('cumulative_score', 0))
+    total_score = score + cumulative_score
+    
+    # Determine tier based on TOTAL score
+    if total_score >= 100:
+        tier = 3
+    elif total_score >= 60:
+        tier = 2
+    elif total_score >= 30:
+        tier = 1
+    else:
+        tier = 0
+        reasons.append("No suspicious activity")
+    # For Tier 1, add penalty points for next evaluation
+    carry_forward = 0
+    if tier == 1:
+        carry_forward = 15  # Added to next evaluation
+        reasons.append("Session flagged for monitoring (+15 carry)")
+    print(f"\n   Base Score      : {score}")
+    print(f"   Cumulative      : {cumulative_score}")
+    print(f"   Total Score     : {total_score}")
+    print(f"   Tier            : {tier}")
+    print(f"   Carry Forward   : {carry_forward}")
+
     if score >= 100:
         tier = 3
         print("TIER 3: Redirecting to ghost ticket")
@@ -892,7 +918,13 @@ def evaluate_session():
     if session_id in sessions:
         del sessions[session_id]
 
-    response = make_response(jsonify({'score': score, 'tier': tier, 'reasons': reasons}))
+    response = make_response(jsonify({
+        'score': score,
+        'total_score': total_score,
+        'tier': tier,
+        'reasons': reasons,
+        'carry_forward': carry_forward
+    }))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
 

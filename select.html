@@ -72,8 +72,8 @@
     .zone-btn.active { outline: 3px solid #a29bfe; outline-offset: 2px; transform: scale(1.04); }
     .zone-btn .zn { font-size: 13px; font-weight: 700; }
     .zone-btn .zp { font-size: 11px; opacity: 0.85; }
-    .zone-rock { background: #c0392b; width: 260px; height: 68px; }
-    .zone-cat1  { background: #6c5ce7; width: 260px; height: 62px; }
+    .zone-rock { background: #c0392b; width: 280px; height: 68px; }
+    .zone-cat1  { background: #6c5ce7; width: 200px; height: 62px; }
     .zone-cat2  { background: #2980b9; width: 260px; height: 62px; }
     .zone-cat3  { background: #27ae60; width: 125px; height: 62px; }
     .venue-legend { display: flex; gap: 16px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
@@ -155,21 +155,21 @@
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a29bfe;font-weight:700;margin-bottom:6px;">Day 1</div>
       <div style="font-size:20px;font-weight:800;color:white;">22 Nov</div>
       <div style="font-size:12px;color:#aaa;margin-bottom:10px;">Saturday · 2026</div>
-      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Available</span>
+      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Available</span>
     </div>
 
     <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a29bfe;font-weight:700;margin-bottom:6px;">Day 2</div>
       <div style="font-size:20px;font-weight:800;color:white;">23 Nov</div>
       <div style="font-size:12px;color:#aaa;margin-bottom:10px;">Sunday · 2026</div>
-      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">Available</span>
+      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Available</span>
     </div>
 
   </div>
 
   <!-- ZONE MAP -->
   <div class="venue-wrapper">
-    <div class="stage-label">&nbsp;&nbsp;STAGE&nbsp;&nbsp;</div>
+    <div class="stage-label">◀&nbsp;&nbsp;STAGE&nbsp;&nbsp;▶</div>
     <div class="venue-map">
       <div class="zone-row">
         <button class="zone-btn zone-rock" id="btn-rock" onclick="selectZone('rock', this)">
@@ -207,7 +207,7 @@
   <div id="seat-section">
     <div class="picker-header">
       <h3 id="picker-title">Select a seat</h3>
-      <button class="back-btn" onclick="backToZones()">Change zone</button>
+      <button class="back-btn" onclick="backToZones()">← Change zone</button>
     </div>
     <div class="screen-bar"></div>
     <div class="screen-txt">STAGE</div>
@@ -273,8 +273,10 @@
   };
 
   function chooseDate(dateStr, el) {
+    // Null guard — bot_runner passes a DOM element; tolerate string IDs too
+    if (typeof el === 'string') el = document.getElementById(el);
     document.querySelectorAll('.date-card').forEach(c => c.classList.remove('active-card'));
-    el.classList.add('active-card');
+    if (el) el.classList.add('active-card');
     selectedDate = dateStr;
     localStorage.setItem('selected_date', dateStr);
     localStorage.setItem('qty_speed_start', Date.now());
@@ -432,3 +434,5 @@
 </script>
 </body>
 </html>
+
+
