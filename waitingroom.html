@@ -148,7 +148,7 @@
 
 <script>
     // Automatically cleans up any accidental trailing slash from config.js
-    let cleanHost = typeof NGROK_URL !== 'undefined' ? NGROK_URL : "http://127.0.0.1:8000";
+    let cleanHost = typeof API_URL !== 'undefined' ? API_URL : "http://127.0.0.1:8000";
     if (cleanHost.endsWith('/')) {
         cleanHost = cleanHost.slice(0, -1);
     }

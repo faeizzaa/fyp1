@@ -14,7 +14,7 @@ async function initSession() {
     
     if (!SESSION_ID) {
         try {
-            const response = await fetch(`${NGROK_URL}/api/init-session`, {
+            const response = await fetch(`${API_URL}/api/init-session`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ async function trackAction(actionCode, extraData = {}) {
     };
     
     try {
-        await fetch(`${NGROK_URL}/api/track-action`, {
+        await fetch(`${API_URL}/api/track-action`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ async function evaluateSession(extraData = {}) {
     };
     
     try {
-        const response = await fetch(`${NGROK_URL}/evaluate`, {
+        const response = await fetch(`${API_URL}/evaluate`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

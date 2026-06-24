@@ -224,7 +224,7 @@
             ? getMouseMoveCount()
             : parseInt(localStorage.getItem('fyp_mouse_moves') || '0');
 
-        fetch(`${NGROK_URL}/evaluate`, {
+        fetch(`${API_URL}/evaluate`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ 
@@ -259,7 +259,7 @@
                 const sessionId = localStorage.getItem('session_id');
 
                 if (zone && seatId && sessionId) {
-                    fetch(`${NGROK_URL}/seats/${zone}/confirm`, {
+                    fetch(`${API_URL}/seats/${zone}/confirm`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ seat_id: seatId, session_id: sessionId })

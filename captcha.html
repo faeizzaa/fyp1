@@ -918,7 +918,7 @@
             clearInterval(timerInterval);
             
             // Send verification result to server
-            fetch(`${NGROK_URL}/api/captcha-verified`, {
+            fetch(`${API_URL}/api/captcha-verified`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

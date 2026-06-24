@@ -52,8 +52,8 @@
         console.log("Telemetry Event Captured:", payload);
 
         // Send to Flask backend via the ngrok tunnel address from config.js
-        if (typeof NGROK_URL !== 'undefined') {
-            fetch(`${NGROK_URL}/detect`, {
+        if (typeof API_URL !== 'undefined') {
+            fetch(`${API_URL}/detect`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"

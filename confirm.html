@@ -134,7 +134,7 @@
                 // server (and therefore the monitor dashboard) never found
                 // out about it. Ping /evaluate with force_tier so it gets
                 // logged too, without re-running the full scorer.
-                fetch(`${NGROK_URL}/evaluate`, {
+                fetch(`${API_URL}/evaluate`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -171,7 +171,7 @@
 
             lockButton('Verifying...');
 
-            fetch(`${NGROK_URL}/evaluate`, {
+            fetch(`${API_URL}/evaluate`, {
     method: "POST",
     headers: {
         "Content-Type": "application/json"
