@@ -4,6 +4,7 @@ import time
 import secrets
 import json
 import os
+from supabase import create_client
 import threading
 from datetime import datetime, timedelta
 
@@ -27,10 +28,10 @@ def serve_static(filename):
 # 🗄️ SUPABASE DATABASE
 # ==========================================
 # ✅ CORRECT — Remove os.environ.get() entirely
-SUPABASE_URL = "[bpvjejwusdjqrotdoehi.supabase.co](https://bpvjejwusdjqrotdoehi.supabase.co)"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzQ2NjgsImV4cCI6MjA5NzgxMDY2OH0.bh3rkYVYB1NR9wu6ta-1-eVw2sxIWHaMLCqUO-93P0c"
+SUPABASE_URL = "https://bpvjejwusdjqrotdoehi.supabase.co"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjIzNDY2OCwiZXhwIjoyMDk3ODEwNjY4fQ.eS0Vchi8-EX5-4v6_ybg1XUYH1kt_9Ld4Hpunmj6vd0"
 
-supabase_client = None
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def init_supabase():
     global supabase_client
