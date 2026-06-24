@@ -16,7 +16,7 @@ from selenium.common.exceptions import TimeoutException
 # CONFIGURATION
 # ==========================================
 
-TARGET_SITE = "https://fyp1-gnoo.onrender.com"
+TARGET_SITE = "https://tickago.onrender.com"
 
 # 1 = Tier 1 (fast single seat, no mouse)
 # 2 = Tier 2 (bulk qty override, no mouse)
