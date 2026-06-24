@@ -6,125 +6,135 @@
   <title>Tickago | Select Seats</title>
   <link rel="stylesheet" href="style.css">
   <style>
+    /* ── NAVBAR ── */
+    .t-nav {
+      background: #0f1115; padding: 0 32px; height: 62px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .t-nav-brand { display: flex; align-items: center; gap: 10px; }
+    .t-nav-logo { width: 34px; height: 34px; background: #6c5ce7; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 15px; }
+    .t-nav-name { color: #fff; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.3px; }
+    .t-nav-name span { color: #a29bfe; }
+
+    /* override stepper active color to purple */
+    .stepper-item.active .step-counter { background-color: #6c5ce7 !important; border-color: #6c5ce7 !important; }
+    .stepper-item.active .step-name { color: #6c5ce7 !important; }
+
+    /* ── DATE CARDS ── */
+    .date-card {
+      flex: 1; min-width: 140px;
+      background: #181c24;
+      border: 2px solid #2a2d35;
+      border-radius: 14px; padding: 18px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .date-card:hover {
+      border-color: #6c5ce7 !important;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(108,92,231,0.2);
+    }
+    .date-card.active-card {
+      border-color: #6c5ce7 !important;
+      box-shadow: 0 0 0 3px rgba(108,92,231,0.25);
+    }
+
+    /* ── VENUE MAP ── */
     .venue-wrapper {
-      background: #1a1a2e;
+      background: #181c24;
       border-radius: 16px;
-      padding: 32px 24px 24px;
-      margin-bottom: 28px;
+      padding: 28px 20px 22px;
+      margin-bottom: 24px;
+      border: 1px solid #2a2d35;
     }
     .stage-label {
       text-align: center;
-      background: linear-gradient(90deg, #e0a800, #f5c518);
-      color: #1a1a2e;
+      background: #6c5ce7;
+      color: #fff;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 11px;
       letter-spacing: 3px;
       padding: 7px 28px;
-      border-radius: 4px;
+      border-radius: 6px;
       width: fit-content;
-      margin: 0 auto 24px;
+      margin: 0 auto 22px;
     }
-    .date-card:hover {
-    border-color: #f5c518 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(245,197,24,0.15);
-}
-.date-card.active-card {
-    border-color: #f5c518 !important;
-    box-shadow: 0 0 0 3px rgba(245,197,24,0.25);
-}
-    .venue-map {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
+    .venue-map { display: flex; flex-direction: column; align-items: center; gap: 10px; }
     .zone-row { display: flex; gap: 10px; justify-content: center; }
     .zone-btn {
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 600;
-      color: white;
+      border: none; border-radius: 10px; cursor: pointer;
+      font-weight: 600; color: white;
       transition: transform 0.15s, box-shadow 0.15s;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      padding: 0;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 3px; padding: 0;
     }
     .zone-btn:hover { transform: scale(1.04); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-    .zone-btn.active { outline: 3px solid #f5c518; outline-offset: 2px; transform: scale(1.04); }
+    .zone-btn.active { outline: 3px solid #a29bfe; outline-offset: 2px; transform: scale(1.04); }
     .zone-btn .zn { font-size: 13px; font-weight: 700; }
     .zone-btn .zp { font-size: 11px; opacity: 0.85; }
-    .zone-rock { background: #c0392b; width: 260px; height: 68px; }
-    .zone-cat1  { background: #8e44ad; width: 260px; height: 62px; }
+    .zone-rock { background: #c0392b; width: 280px; height: 68px; }
+    .zone-cat1  { background: #6c5ce7; width: 200px; height: 62px; }
     .zone-cat2  { background: #2980b9; width: 260px; height: 62px; }
     .zone-cat3  { background: #27ae60; width: 125px; height: 62px; }
-    .venue-legend {
-      display: flex; gap: 16px; justify-content: center;
-      margin-top: 16px; flex-wrap: wrap;
-    }
+    .venue-legend { display: flex; gap: 16px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
     .vleg { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #aaa; }
     .vdot { width: 11px; height: 11px; border-radius: 50%; }
 
-    /* Seat picker */
+    /* ── SEAT PICKER ── */
     #seat-section { display: none; margin-top: 4px; }
-    .picker-header {
-      display: flex; align-items: center;
-      justify-content: space-between; margin-bottom: 14px;
-    }
-    .picker-header h3 { margin: 0; font-size: 15px; }
+    .picker-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .picker-header h3 { margin: 0; font-size: 15px; color: #1a1035; }
     .back-btn {
       background: none; border: 1px solid #dee2e6;
       border-radius: 6px; padding: 5px 12px;
       font-size: 12px; cursor: pointer; color: #495057;
     }
-    .screen-bar {
-      background: linear-gradient(90deg,#555,#888,#555);
-      height: 5px; border-radius: 3px; margin-bottom: 5px; opacity: 0.5;
-    }
-    .screen-txt {
-      text-align: center; font-size: 11px;
-      color: #aaa; margin-bottom: 18px; letter-spacing: 2px;
-    }
+    .back-btn:hover { border-color: #6c5ce7; color: #6c5ce7; }
+    .screen-bar { background: linear-gradient(90deg,#555,#888,#555); height: 5px; border-radius: 3px; margin-bottom: 5px; opacity: 0.5; }
+    .screen-txt { text-align: center; font-size: 11px; color: #aaa; margin-bottom: 18px; letter-spacing: 2px; }
     .seat-grid { display: flex; flex-direction: column; gap: 7px; align-items: center; }
     .seat-row { display: flex; align-items: center; gap: 5px; }
     .row-lbl { width: 16px; font-size: 11px; font-weight: 600; color: #888; text-align: right; }
     .seat {
-      width: 32px; height: 28px;
-      border-radius: 5px 5px 3px 3px;
-      border: none; cursor: pointer;
-      font-size: 9px; font-weight: 600;
+      width: 32px; height: 28px; border-radius: 5px 5px 3px 3px;
+      border: none; cursor: pointer; font-size: 9px; font-weight: 600;
       transition: transform 0.1s, background 0.15s;
     }
     .seat.available  { background: #27ae60; color: white; }
     .seat.available:hover { transform: scale(1.12); background: #2ecc71; }
     .seat.unavailable { background: #adb5bd; color: #868e96; cursor: not-allowed; }
-    .seat.selected   { background: #f5c518; color: #1a1a2e; transform: scale(1.12); }
-    .seat-legend {
-      display: flex; gap: 18px; justify-content: center; margin-top: 18px;
-    }
+    .seat.selected   { background: #6c5ce7; color: white; transform: scale(1.12); }
+    .seat-legend { display: flex; gap: 18px; justify-content: center; margin-top: 18px; }
     .sl-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #555; }
     .sl-swatch { width: 16px; height: 14px; border-radius: 3px 3px 2px 2px; }
 
-    /* Summary bar */
+    /* ── SUMMARY BAR ── */
     #summary-bar {
       display: none;
-      background: #f8f9fa; border: 1px solid #dee2e6;
-      border-radius: 10px; padding: 14px 18px; margin-top: 16px;
+      background: #1a1035; border: 1px solid #2a2060;
+      border-radius: 12px; padding: 16px 20px; margin-top: 16px;
       align-items: center; justify-content: space-between; gap: 12px;
     }
     #summary-bar.visible { display: flex; }
     .sum-info { font-size: 14px; }
-    .sum-info strong { display: block; font-size: 15px; }
-    .sum-price { font-size: 18px; font-weight: 700; color: #c0392b; }
+    .sum-info strong { display: block; font-size: 15px; color: #fff; }
+    .sum-info span { color: #a29bfe !important; }
+    .sum-price { font-size: 20px; font-weight: 800; color: #a29bfe; }
+    #summary-bar .btn-primary { background: #6c5ce7 !important; border: none !important; }
+    #summary-bar .btn-primary:hover { background: #5b4cc4 !important; }
 
     .seat-loading { text-align: center; padding: 36px; color: #888; font-size: 14px; }
   </style>
 </head>
 <body>
+
+<nav class="t-nav">
+  <div class="t-nav-brand">
+    <div class="t-nav-logo">T</div>
+    <span class="t-nav-name">Ticka<span>go</span></span>
+  </div>
+</nav>
+
 <div class="container">
   <div class="stepper-wrapper">
     <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
@@ -137,39 +147,33 @@
     <strong id="ev-label"></strong>&nbsp;·&nbsp;<span id="dt-label"></span>
   </p>
 
-<!-- DATE SELECTION -->
-<h2 style="text-align:left; margin-bottom:10px;">Select Date</h2>
-<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+  <!-- DATE SELECTION -->
+  <h2 style="text-align:left;margin-bottom:12px;color:#1a1035;">Select Date</h2>
+  <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
 
-  <div class="date-container" style="display: flex; gap: 16px; width: 100%; max-width: 500px; margin: 0 auto;">
+    <div class="date-card" id="date1-card" onclick="chooseDate('22 Nov 2026 (Day 1 - Saturday)', this)">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a29bfe;font-weight:700;margin-bottom:6px;">Day 1</div>
+      <div style="font-size:20px;font-weight:800;color:white;">22 Nov</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px;">Saturday · 2026</div>
+      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Available</span>
+    </div>
 
-  <div class="date-card" id="date1-card" onclick="chooseDate('22 Nov 2026 (Day 1 - Saturday)', this)"
-    style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #333; border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.2s;">
-    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #f5c518; font-weight: 700; margin-bottom: 6px;">Day 1</div>
-    <div style="font-size: 20px; font-weight: 800; color: white;">22 Nov</div>
-    <div style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Saturday · 2026</div>
-    <span style="background: #27ae60; color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;">Available</span>
+    <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)">
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a29bfe;font-weight:700;margin-bottom:6px;">Day 2</div>
+      <div style="font-size:20px;font-weight:800;color:white;">23 Nov</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px;">Sunday · 2026</div>
+      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Available</span>
+    </div>
+
   </div>
-
-  <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)"
-    style="flex: 1; min-width: 140px; background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #333; border-radius: 14px; padding: 16px; cursor: pointer; transition: all 0.2s;">
-    <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: #f5c518; font-weight: 700; margin-bottom: 6px;">Day 2</div>
-    <div style="font-size: 20px; font-weight: 800; color: white;">23 Nov</div>
-    <div style="font-size: 12px; color: #aaa; margin-bottom: 10px;">Sunday · 2026</div>
-    <span style="background: #27ae60; color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px;">Available</span>
-  </div>
-
-</div>
-
-</div>
 
   <!-- ZONE MAP -->
   <div class="venue-wrapper">
-    <div class="stage-label">&nbsp;&nbsp;STAGE&nbsp;&nbsp;</div>
+    <div class="stage-label">◀&nbsp;&nbsp;STAGE&nbsp;&nbsp;▶</div>
     <div class="venue-map">
       <div class="zone-row">
         <button class="zone-btn zone-rock" id="btn-rock" onclick="selectZone('rock', this)">
-          <span class="zn">Rock Zone</span><span class="zp">RM 599</span>
+          <span class="zn">Rock Zone</span><span class="zp">RM 599 · Standing</span>
         </button>
       </div>
       <div class="zone-row">
@@ -193,7 +197,7 @@
     </div>
     <div class="venue-legend">
       <div class="vleg"><div class="vdot" style="background:#c0392b"></div>Rock Zone</div>
-      <div class="vleg"><div class="vdot" style="background:#8e44ad"></div>Cat 1</div>
+      <div class="vleg"><div class="vdot" style="background:#6c5ce7"></div>Cat 1</div>
       <div class="vleg"><div class="vdot" style="background:#2980b9"></div>Cat 2</div>
       <div class="vleg"><div class="vdot" style="background:#27ae60"></div>Cat 3</div>
     </div>
@@ -203,14 +207,14 @@
   <div id="seat-section">
     <div class="picker-header">
       <h3 id="picker-title">Select a seat</h3>
-      <button class="back-btn" onclick="backToZones()">Change zone</button>
+      <button class="back-btn" onclick="backToZones()">← Change zone</button>
     </div>
     <div class="screen-bar"></div>
     <div class="screen-txt">STAGE</div>
     <div id="seat-grid-wrap"><div class="seat-loading">Loading seats...</div></div>
     <div class="seat-legend">
       <div class="sl-item"><div class="sl-swatch" style="background:#27ae60"></div>Available</div>
-      <div class="sl-item"><div class="sl-swatch" style="background:#f5c518"></div>Selected</div>
+      <div class="sl-item"><div class="sl-swatch" style="background:#6c5ce7"></div>Your pick</div>
       <div class="sl-item"><div class="sl-swatch" style="background:#adb5bd"></div>Unavailable</div>
     </div>
   </div>
@@ -219,10 +223,10 @@
   <div id="summary-bar">
     <div class="sum-info">
       <strong id="sum-seat">—</strong>
-      <span id="sum-zone" style="color:#888;font-size:13px"></span>
+      <span id="sum-zone" style="color:#a29bfe;font-size:13px"></span>
     </div>
     <div class="sum-price" id="sum-price">RM —</div>
-    <button class="btn btn-primary" onclick="goNext()">Continue</button>
+    <button class="btn btn-primary" onclick="goNext()">Continue →</button>
   </div>
 </div>
 
@@ -239,22 +243,33 @@
   const COLS = 10;
 
   let activeZone = null;
-  //let activeSeat = null;
   let sessionId = localStorage.getItem("session_id") || crypto.randomUUID();
   localStorage.setItem("session_id", sessionId);
-  //let selectedDate = null;
+  let selectedDate = null;
   let selectedQty = 1;
 
   window.onload = function() {
     document.getElementById("ev-label").textContent = localStorage.getItem("selected_event") || "";
     document.getElementById("dt-label").textContent  = localStorage.getItem("selected_date")  || "";
 
+    // ── SALE GATE VERIFICATION ──
+    const saleVerified = sessionStorage.getItem('sale_verified');
+    if (!saleVerified) {
+      let pattern = localStorage.getItem('fyp_pattern') || '';
+      if (!pattern.includes('X')) { pattern += 'X'; localStorage.setItem('fyp_pattern', pattern); }
+      console.warn('Sale gate not verified — possible bot bypass detected.');
+    } else {
+      sessionStorage.removeItem('sale_verified');
+    }
+
+    if (!localStorage.getItem('session_start')) {
+      localStorage.setItem('session_start', Date.now());
+    }
+
     localStorage.setItem("selected_date", "22 Nov 2026 (Saturday)");
 
     let pattern = localStorage.getItem("fyp_pattern") || "H";
     if (!pattern.includes("A")) { pattern += "A"; localStorage.setItem("fyp_pattern", pattern); }
-
-    
   };
 
   function chooseDate(dateStr, el) {
@@ -262,57 +277,50 @@
     el.classList.add('active-card');
     selectedDate = dateStr;
     localStorage.setItem('selected_date', dateStr);
-
-    // 🌟 THE ADDITION: Updates the visual text container at the top of the screen
-    const selectionHeader = document.getElementById("selected-date-summary");
-    if (selectionHeader) { selectionHeader.innerText = dateStr; }
-
-    // 🔒 UNTOUCHED: Your original velocity speed baseline initializer
     localStorage.setItem('qty_speed_start', Date.now());
-
-    // 🔒 UNTOUCHED: Displays the inventory section
-    document.getElementById('qty-section').style.display = 'block';
-
-    // 🔒 UNTOUCHED: Appends the 'D' character to your Trie pattern sequence matcher
     let pattern = localStorage.getItem('fyp_pattern') || 'HA';
     if (!pattern.includes('D')) { pattern += 'D'; localStorage.setItem('fyp_pattern', pattern); }
-    }
+  }
+
+  function chooseQty(qty, el) {
+    document.querySelectorAll('.qty-btn').forEach(b => b.classList.remove('btn-primary'));
+    el.classList.add('btn-primary');
+    selectedQty = qty;
+    localStorage.setItem('selected_qty', qty);
+    const qtyStart = parseInt(localStorage.getItem('qty_speed_start') || Date.now());
+    localStorage.setItem('qty_select_speed', Date.now() - qtyStart);
+  }
 
   function selectZone(zone, btn) {
-    // pattern tracking
     let pattern = localStorage.getItem("fyp_pattern") || "HA";
     if (!pattern.includes("D")) { pattern += "D"; }
     localStorage.setItem("fyp_pattern", pattern);
-
-    // highlight
     document.querySelectorAll(".zone-btn").forEach(b => b.classList.remove("active"));
     btn.classList.add("active");
-
     activeZone = zone;
     activeSeat = null;
-
     document.getElementById("seat-section").style.display = "block";
     document.getElementById("picker-title").textContent =
       ZONE_META[zone].label + " — RM " + ZONE_META[zone].price;
     document.getElementById("summary-bar").classList.remove("visible");
-
     loadSeats(zone);
     document.getElementById("seat-section").scrollIntoView({ behavior: "smooth" });
   }
 
   function backToZones() {
     selectedSeats.forEach(seatId => {
-        fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
-        }).catch(() => {});
+      fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+      }).catch(() => {});
     });
     selectedSeats = [];
     document.getElementById("seat-section").style.display = "none";
     document.getElementById("summary-bar").classList.remove("visible");
     activeZone = null;
-}
+  }
+
   async function loadSeats(zone) {
     const wrap = document.getElementById("seat-grid-wrap");
     wrap.innerHTML = '<div class="seat-loading">Loading seats...</div>';
@@ -329,20 +337,17 @@
     const wrap = document.getElementById("seat-grid-wrap");
     const grid = document.createElement("div");
     grid.className = "seat-grid";
-
     ROWS.forEach(row => {
       const rowEl = document.createElement("div");
       rowEl.className = "seat-row";
-
       const lbl = document.createElement("span");
       lbl.className = "row-lbl";
       lbl.textContent = row;
       rowEl.appendChild(lbl);
-
       for (let c = 1; c <= COLS; c++) {
-        const sid  = row + c;
+        const sid    = row + c;
         const status = seatData[sid] || "unavailable";
-        const btn  = document.createElement("button");
+        const btn    = document.createElement("button");
         btn.className = "seat " + status;
         btn.textContent = c;
         btn.dataset.sid = sid;
@@ -359,80 +364,63 @@
 
   const MAX_SEATS = 5;
   let selectedSeats = [];
-  
+
   async function pickSeat(seatId, btn) {
-    // If already selected — deselect it
     if (selectedSeats.includes(seatId)) {
-        await fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
-        }).catch(() => {});
-        selectedSeats = selectedSeats.filter(s => s !== seatId);
-        btn.className = "seat available";
-        btn.onclick = () => pickSeat(seatId, btn);
-        updateSummary();
-        return;
+      await fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+      }).catch(() => {});
+      selectedSeats = selectedSeats.filter(s => s !== seatId);
+      btn.className = "seat available";
+      btn.onclick = () => pickSeat(seatId, btn);
+      updateSummary();
+      return;
     }
-
-    // Max limit check
     if (selectedSeats.length >= MAX_SEATS) {
-        alert("Maximum " + MAX_SEATS + " tickets per customer.");
-        return;
+      alert("Maximum " + MAX_SEATS + " tickets per customer.");
+      return;
     }
-
     try {
-        const res = await fetch(NGROK_URL + "/seats/" + activeZone + "/reserve", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
-        });
-        const data = await res.json();
-
-        if (!data.success) {
-            alert("That seat was just taken — please pick another.");
-            btn.className = "seat unavailable";
-            btn.disabled = true;
-            return;
-        }
-
-        selectedSeats.push(seatId);
-        btn.className = "seat selected";
-
-        // Pattern tracking
-        let pattern = localStorage.getItem("fyp_pattern") || "HAD";
-        let sCount = (pattern.match(/S/g) || []).length;
-        if (sCount < 3) { pattern += "S"; localStorage.setItem("fyp_pattern", pattern); }
-
-        updateSummary();
-
+      const res = await fetch(NGROK_URL + "/seats/" + activeZone + "/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert("That seat was just taken — please pick another.");
+        btn.className = "seat unavailable";
+        btn.disabled = true;
+        return;
+      }
+      selectedSeats.push(seatId);
+      btn.className = "seat selected";
+      let pattern = localStorage.getItem("fyp_pattern") || "HAD";
+      let sCount = (pattern.match(/S/g) || []).length;
+      if (sCount < 3) { pattern += "S"; localStorage.setItem("fyp_pattern", pattern); }
+      updateSummary();
     } catch(e) {
-        alert("Could not reserve seat. Please try again.");
+      alert("Could not reserve seat. Please try again.");
     }
-}
+  }
 
   function updateSummary() {
     const count = selectedSeats.length;
-    if (count === 0) {
-        document.getElementById("summary-bar").classList.remove("visible");
-        return;
-    }
-
+    if (count === 0) { document.getElementById("summary-bar").classList.remove("visible"); return; }
     const total = ZONE_META[activeZone].price * count;
     localStorage.setItem("selected_qty", count);
     localStorage.setItem("selected_seat_id", selectedSeats.join(","));
     localStorage.setItem("selected_zone", activeZone);
     localStorage.setItem("selected_seat", ZONE_META[activeZone].label + " - RM " + ZONE_META[activeZone].price);
-
-    // qty speed on first seat pick
     const qtyStart = parseInt(localStorage.getItem("qty_speed_start") || Date.now());
     localStorage.setItem("qty_select_speed", Date.now() - qtyStart);
-
     document.getElementById("sum-seat").textContent = "Seats: " + selectedSeats.join(", ") + " (" + count + "/" + MAX_SEATS + ")";
     document.getElementById("sum-zone").textContent = ZONE_META[activeZone].label;
     document.getElementById("sum-price").textContent = "RM " + total;
     document.getElementById("summary-bar").classList.add("visible");
-}
+  }
 
   function goNext() {
     if (!selectedDate) { alert("Please select a date first."); return; }
@@ -440,7 +428,7 @@
     let pattern = localStorage.getItem('fyp_pattern') || 'HADSS';
     if (!pattern.includes('Q')) { pattern += 'Q'; localStorage.setItem('fyp_pattern', pattern); }
     window.location.href = 'confirm.html';
-}
+  }
 </script>
 </body>
 </html>

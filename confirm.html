@@ -8,6 +8,7 @@
     
 </head>
 <body>
+<nav style="background:#0f1115;padding:0 32px;height:62px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);"><div style="width:34px;height:34px;background:#6c5ce7;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;">T</div><span style="color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:-0.3px;">Ticka<span style="color:#a29bfe">go</span></span></nav>
     <div class="container">
         <div class="stepper-wrapper">
             <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
@@ -34,7 +35,10 @@
 
         <div style="margin-top: 30px; display: flex; gap: 15px;">
             <button class="btn"onclick="goBackToSeatSelection()"style="background:#6c757d; color:white;">Back</button>
-            <button class="btn btn-primary" onclick="validateAndCheckout()">Proceed to Payment</button>
+            <button class="btn btn-primary" id="checkout-btn" onclick="validateAndCheckout()">Proceed to Payment</button>
+        </div>
+        <div id="delay-banner" style="display:none;margin-top:16px;background:#f3f0ff;border:1px solid #6c5ce7;border-radius:8px;padding:12px 16px;color:#6c5ce7;font-size:0.9rem;text-align:center;">
+            ⏳ Security check applied — redirecting in <strong id="delay-count">3</strong>s...
         </div>
     </div>
 
@@ -65,11 +69,37 @@
 
 
         function goBackToSeatSelection() {
-
             let pattern = localStorage.getItem('fyp_pattern') || "";
             pattern += "B";
             localStorage.setItem('fyp_pattern', pattern);
             window.history.back();
+        }
+
+        function lockButton(msg) {
+            const btn = document.getElementById('checkout-btn');
+            btn.disabled = true;
+            btn.style.background = '#adb5bd';
+            btn.style.cursor = 'not-allowed';
+            btn.innerText = msg || 'Processing...';
+        }
+
+        function unlockButton() {
+            const btn = document.getElementById('checkout-btn');
+            btn.disabled = false;
+            btn.style.background = '';
+            btn.style.cursor = '';
+            btn.innerText = 'Proceed to Payment';
+        }
+
+        function showDelayBanner(seconds) {
+            document.getElementById('delay-banner').style.display = 'block';
+            let remaining = seconds;
+            document.getElementById('delay-count').innerText = remaining;
+            const tick = setInterval(() => {
+                remaining--;
+                document.getElementById('delay-count').innerText = remaining;
+                if (remaining <= 0) clearInterval(tick);
+            }, 1000);
         }
 
         function validateAndCheckout() {
@@ -121,9 +151,7 @@
                     "Tier 1 Active: Suspicious automated behaviour detected due to elevated interaction speed."
                 );
 
-                // Match the real Tier 1 response elsewhere in this flow:
-                // apply friction, then continue automatically instead of
-                // dead-ending here and forcing a second click to proceed.
+                showDelayBanner(3);
                 setTimeout(() => {
                     window.location.href = "payment.html";
                 }, 3000);
@@ -136,11 +164,12 @@
             console.log("PATTERN =", pattern);
             console.log("QTY =", qtySelected);
 
-            
             if (!name || !email) {
                 alert("Please fill in your profile details.");
                 return;
             }
+
+            lockButton('Verifying...');
 
             fetch(`${NGROK_URL}/evaluate`, {
     method: "POST",
@@ -163,15 +192,9 @@
     switch(data.tier){
 
         case 1:
-
-            alert(
-                "Tier 1 Detection\nArtificial delay applied."
-            );
-
-            setTimeout(() => {
-                window.location.href = "payment.html";
-            }, 3000);
-
+            alert("Tier 1 Detection\nArtificial delay applied. You will be redirected shortly.");
+            showDelayBanner(3);
+            setTimeout(() => { window.location.href = "payment.html"; }, 3000);
             break;
 
         case 2:
@@ -205,6 +228,7 @@
 })
 .catch(err => {
     console.error("FETCH ERROR =", err);
+    unlockButton();
     alert("Could not reach the detection server (" + err + "). Check Flask + ngrok are running, then try again.");
 });
         }
