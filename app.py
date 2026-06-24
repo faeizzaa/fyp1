@@ -7,7 +7,6 @@ import os
 import threading
 from datetime import datetime, timedelta
 
-
 # ==========================================
 # 📁 SERVE STATIC FILES (HTML/JS/CSS)
 # ==========================================
@@ -25,12 +24,110 @@ def serve_static(filename):
     return send_from_directory(FRONTEND_DIR, filename)
 
 # ==========================================
+# 🗄️ SUPABASE DATABASE
+# ==========================================
+SUPABASE_URL = os.environ.get("https://bpvjejwusdjqrotdoehi.supabase.co")
+SUPABASE_KEY = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzQ2NjgsImV4cCI6MjA5NzgxMDY2OH0.bh3rkYVYB1NR9wu6ta-1-eVw2sxIWHaMLCqUO-93P0c")
+
+supabase_client = None
+
+def init_supabase():
+    global supabase_client
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            from supabase import create_client
+            supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            print("[DB] Supabase connected successfully.")
+        except Exception as e:
+            print(f"[DB] Supabase connection failed: {e}")
+    else:
+        print("[DB] Supabase credentials not found — using in-memory fallback.")
+
+def save_evaluation_to_db(log):
+    if not supabase_client:
+        return
+    try:
+        supabase_client.table("evaluation_logs").insert({
+            "session_id":      log["session_id"],
+            "pattern":         log["pattern"],
+            "duration_ms":     int(log["duration"]),
+            "quantity":        log["quantity"],
+            "mouse_movements": log["mouse_movements"],
+            "score":           log["score"],
+            "tier":            log["tier"],
+            "reasons":         ", ".join(log["reasons"]) if isinstance(log["reasons"], list) else log["reasons"],
+            "ip_address":      log.get("ip", "unknown")
+        }).execute()
+        print(f"[DB] Evaluation log saved to Supabase.")
+    except Exception as e:
+        print(f"[DB] Failed to save evaluation: {e}")
+
+def save_session_to_db(session_id, session):
+    if not supabase_client:
+        return
+    try:
+        supabase_client.table("sessions").upsert({
+            "session_id":     session_id,
+            "ip_address":     session.get("ip", "unknown"),
+            "user_agent":     session.get("user_agent", ""),
+            "pattern":        "".join(session.get("actions", [])),
+            "mouse_movements": session.get("mouse_movements", 0),
+            "quantity":       session.get("quantity", 1),
+            "pages_visited":  ", ".join(session.get("pages_visited", [])),
+            "start_time":     session.get("start_time", time.time())
+        }).execute()
+    except Exception as e:
+        print(f"[DB] Failed to save session: {e}")
+
+def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
+    if not supabase_client:
+        return
+    try:
+        supabase_client.table("seat_store").upsert({
+            "zone":        zone,
+            "seat_id":     seat_id,
+            "status":      status,
+            "reserved_at": reserved_at,
+            "session_id":  session_id
+        }).execute()
+    except Exception as e:
+        print(f"[DB] Failed to save seat: {e}")
+
+def load_logs_from_db():
+    if not supabase_client:
+        return []
+    try:
+        result = supabase_client.table("evaluation_logs")\
+            .select("*")\
+            .order("created_at", desc=True)\
+            .limit(100)\
+            .execute()
+        logs = []
+        for row in result.data:
+            logs.append({
+                "time":            row.get("created_at", "")[:19].replace("T", " "),
+                "session_id":      row.get("session_id", "unknown"),
+                "pattern":         row.get("pattern", "N/A"),
+                "duration":        row.get("duration_ms", 0),
+                "quantity":        row.get("quantity", 1),
+                "mouse_movements": row.get("mouse_movements", 0),
+                "score":           row.get("score", 0),
+                "tier":            row.get("tier", 0),
+                "reasons":         row.get("reasons", "").split(", ") if row.get("reasons") else [],
+                "ip":              row.get("ip_address", "unknown")
+            })
+        return logs
+    except Exception as e:
+        print(f"[DB] Failed to load logs: {e}")
+        return []
+
+# ==========================================
 # 🗄️ IN-MEMORY SESSION STORAGE
 # ==========================================
 sessions = {}
 
 # ==========================================
-# 💾 PERSISTENT EVALUATION LOG
+# 💾 FALLBACK — JSON FILE LOG
 # ==========================================
 LOG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'evaluation_logs.json')
 
@@ -40,20 +137,20 @@ def load_logs():
             with open(LOG_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"⚠️  Could not load saved evaluation logs ({e}); starting fresh.")
+            print(f"[Log] Could not load JSON logs: {e}")
     return []
 
 def save_logs():
     try:
         with open(LOG_FILE, 'w') as f:
-            json.dump(evaluation_logs, f)
+            json.dump(evaluation_logs[-200:], f)
     except Exception as e:
-        print(f"⚠️  Could not save evaluation logs: {e}")
+        print(f"[Log] Could not save JSON logs: {e}")
 
 evaluation_logs = load_logs()
 
 # ==========================================
-# ⏱️ SYSTEM-SYNCHRONIZED MASTER CLOCK
+# ⏱️ SALE COUNTDOWN
 # ==========================================
 SALE_COUNTDOWN_SECONDS = 120
 TARGET_DROP_TIME = time.time() + SALE_COUNTDOWN_SECONDS
@@ -103,7 +200,7 @@ def load_learned_patterns():
             with open(PATTERNS_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"⚠️  Could not load learned patterns ({e}); starting fresh.")
+            print(f"[Patterns] Could not load: {e}")
     return []
 
 def save_learned_patterns():
@@ -111,7 +208,7 @@ def save_learned_patterns():
         with open(PATTERNS_FILE, 'w') as f:
             json.dump(learned_patterns, f)
     except Exception as e:
-        print(f"⚠️  Could not save learned patterns: {e}")
+        print(f"[Patterns] Could not save: {e}")
 
 learned_patterns = load_learned_patterns()
 for p in learned_patterns:
@@ -147,7 +244,6 @@ seat_store = init_seats()
 seat_lock = threading.Lock()
 
 def release_expired_holds():
-    """Background worker — releases seats held longer than HOLD_MINUTES."""
     while True:
         time.sleep(30)
         now = datetime.utcnow()
@@ -160,15 +256,14 @@ def release_expired_holds():
                             seat["status"] = "available"
                             seat["reserved_at"] = None
                             seat["session_id"] = None
+                            save_seat_to_db(zone, seat_id, "available")
                             print(f"[Seat] Auto-released: {zone}/{seat_id}")
 
-# Start background seat release worker
 worker = threading.Thread(target=release_expired_holds, daemon=True)
 worker.start()
 
 @app.route('/seats/<zone>', methods=['GET'])
 def get_seats(zone):
-    """Return all seats for a zone — buyer view (reserved+sold both show as unavailable)."""
     with seat_lock:
         zone_data = seat_store.get(zone)
         if not zone_data:
@@ -207,12 +302,13 @@ def reserve_seat(zone):
         seat["reserved_at"] = datetime.utcnow().isoformat()
         seat["session_id"] = session_id
 
+    save_seat_to_db(zone, seat_id, "reserved", seat["reserved_at"], session_id)
     print(f"[Seat] Reserved: {zone}/{seat_id} by session {session_id[:12]}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "zone": zone}))
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
-    
+
 @app.route('/seats/<zone>/confirm', methods=['POST', 'OPTIONS'])
 def confirm_seat(zone):
     if request.method == 'OPTIONS':
@@ -236,6 +332,7 @@ def confirm_seat(zone):
         seat["status"] = "sold"
         seat["reserved_at"] = None
 
+    save_seat_to_db(zone, seat_id, "sold")
     print(f"[Seat] Sold: {zone}/{seat_id}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "sold"}))
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -267,15 +364,15 @@ def release_seat(zone):
             seat["reserved_at"] = None
             seat["session_id"] = None
 
+    save_seat_to_db(zone, seat_id, "available")
     print(f"[Seat] Released: {zone}/{seat_id}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "available"}))
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
     return response
-    
+
 @app.route('/seats/admin/<zone>', methods=['GET'])
 def admin_seats(zone):
-    """Admin view — shows real status (available/reserved/sold) with timestamps."""
     with seat_lock:
         zone_data = seat_store.get(zone)
         if not zone_data:
@@ -292,15 +389,14 @@ DASHBOARD_HTML = """
     <title>Bot Detection Monitor</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Segoe UI', Arial, sans-serif; 
-            background: #1a1a2e; 
-            color: #eee; 
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
             padding: 20px;
         }
         h1 { color: #00d4ff; margin-bottom: 10px; }
         .subtitle { color: #888; margin-bottom: 30px; }
-        
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -314,28 +410,29 @@ DASHBOARD_HTML = """
             text-align: center;
             border: 1px solid #0f3460;
         }
-        .stat-value { 
-            font-size: 2.5rem; 
-            font-weight: bold; 
-            color: #00d4ff; 
-        }
-        .stat-label { 
-            color: #888; 
-            font-size: 0.9rem; 
-            margin-top: 5px; 
-        }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #00d4ff; }
+        .stat-label { color: #888; font-size: 0.9rem; margin-top: 5px; }
         .stat-card.tier1 .stat-value { color: #ffc107; }
         .stat-card.tier2 .stat-value { color: #ff9800; }
         .stat-card.tier3 .stat-value { color: #f44336; }
         .stat-card.clean .stat-value { color: #4caf50; }
-        
         .section-title {
             color: #00d4ff;
             margin: 30px 0 15px 0;
             padding-bottom: 10px;
             border-bottom: 1px solid #0f3460;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
-        
+        .db-badge {
+            font-size: 12px;
+            background: #27ae60;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+        }
+        .db-badge.offline { background: #e74c3c; }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -348,13 +445,8 @@ DASHBOARD_HTML = """
             text-align: left;
             border-bottom: 1px solid #0f3460;
         }
-        th { 
-            background: #0f3460; 
-            color: #00d4ff; 
-            font-weight: 600;
-        }
+        th { background: #0f3460; color: #00d4ff; font-weight: 600; }
         tr:hover { background: #1f2b4d; }
-        
         .tier-badge {
             padding: 4px 12px;
             border-radius: 20px;
@@ -365,7 +457,6 @@ DASHBOARD_HTML = """
         .tier-1 { background: #ffc107; color: black; }
         .tier-2 { background: #ff9800; color: white; }
         .tier-3 { background: #f44336; color: white; }
-        
         .pattern-code {
             font-family: 'Courier New', monospace;
             background: #0f3460;
@@ -373,7 +464,6 @@ DASHBOARD_HTML = """
             border-radius: 4px;
             font-size: 0.9rem;
         }
-        
         .refresh-btn {
             background: #00d4ff;
             color: #1a1a2e;
@@ -385,19 +475,8 @@ DASHBOARD_HTML = """
             margin-bottom: 20px;
         }
         .refresh-btn:hover { background: #00b8e6; }
-        
-        .auto-refresh {
-            color: #888;
-            font-size: 0.85rem;
-            margin-left: 15px;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        
+        .auto-refresh { color: #888; font-size: 0.85rem; margin-left: 15px; }
+        .empty-state { text-align: center; padding: 40px; color: #666; }
         .active-sessions {
             background: #16213e;
             border-radius: 12px;
@@ -410,25 +489,29 @@ DASHBOARD_HTML = """
             align-items: center;
             padding: 10px;
             border-bottom: 1px solid #0f3460;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .session-item:last-child { border-bottom: none; }
-        .session-id { 
-            font-family: monospace; 
-            color: #00d4ff; 
-        }
-        .session-actions {
+        .session-id { font-family: monospace; color: #00d4ff; }
+        .session-actions { font-family: monospace; color: #ffc107; }
+        .ip-badge {
+            background: #0f3460;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
             font-family: monospace;
-            color: #ffc107;
+            color: #aaa;
         }
     </style>
 </head>
 <body>
     <h1>🛡️ Bot Detection Monitor</h1>
     <p class="subtitle">Real-time session tracking and threat analysis</p>
-    
+
     <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
     <span class="auto-refresh">Auto-refreshes every 5 seconds</span>
-    
+
     <div class="stats-grid">
         <div class="stat-card clean">
             <div class="stat-value">{{ stats.clean }}</div>
@@ -447,13 +530,19 @@ DASHBOARD_HTML = """
             <div class="stat-label">🚫 Tier 3 (Blocked)</div>
         </div>
     </div>
-    
-    <h2 class="section-title">🔴 Active Sessions ({{ active_count }})</h2>
+
+    <h2 class="section-title">
+        🔴 Active Sessions ({{ active_count }})
+        <span class="db-badge {{ 'online' if db_online else 'offline' }}">
+            {{ '🟢 Supabase Connected' if db_online else '🔴 DB Offline (in-memory)' }}
+        </span>
+    </h2>
     <div class="active-sessions">
         {% if active_sessions %}
             {% for sid, session in active_sessions.items() %}
             <div class="session-item">
                 <span class="session-id">{{ sid[:16] }}...</span>
+                <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
                 <span>Pages: {{ session.pages_visited | join(', ') or 'None' }}</span>
                 <span class="session-actions">Pattern: {{ session.actions | join('') or 'N/A' }}</span>
                 <span>Mouse: {{ session.mouse_movements }}</span>
@@ -464,13 +553,14 @@ DASHBOARD_HTML = """
             <div class="empty-state">No active sessions</div>
         {% endif %}
     </div>
-    
-    <h2 class="section-title">📋 Evaluation History</h2>
+
+    <h2 class="section-title">📋 Evaluation History ({{ logs | length }} records)</h2>
     <table>
         <thead>
             <tr>
                 <th>Time</th>
                 <th>Session ID</th>
+                <th>IP</th>
                 <th>Pattern</th>
                 <th>Duration</th>
                 <th>Qty</th>
@@ -486,23 +576,24 @@ DASHBOARD_HTML = """
                 <tr>
                     <td>{{ log.time }}</td>
                     <td><code>{{ log.session_id[:12] }}...</code></td>
+                    <td><span style="font-size:12px;color:#aaa">{{ log.get('ip', 'unknown') }}</span></td>
                     <td><span class="pattern-code">{{ log.pattern }}</span></td>
                     <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
                     <td>{{ log.quantity }}</td>
                     <td>{{ log.mouse_movements }}</td>
                     <td><strong>{{ log.score }}</strong></td>
                     <td><span class="tier-badge tier-{{ log.tier }}">Tier {{ log.tier }}</span></td>
-                    <td>{{ log.reasons | join(', ') }}</td>
+                    <td style="font-size:12px">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
                 </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="9" class="empty-state">No evaluations yet. Run a bot to see data.</td>
+                    <td colspan="10" class="empty-state">No evaluations yet. Run a bot to see data.</td>
                 </tr>
             {% endif %}
         </tbody>
     </table>
-    
+
     <script>
         setTimeout(() => location.reload(), 5000);
     </script>
@@ -512,16 +603,21 @@ DASHBOARD_HTML = """
 
 @app.route('/monitor')
 def monitor_dashboard():
+    # Try to load from Supabase, fallback to in-memory
+    if supabase_client:
+        logs = load_logs_from_db()
+        db_online = True
+    else:
+        logs = list(reversed(evaluation_logs[-50:]))
+        db_online = False
+
     stats = {'clean': 0, 'tier1': 0, 'tier2': 0, 'tier3': 0}
-    for log in evaluation_logs:
-        if log['tier'] == 0:
-            stats['clean'] += 1
-        elif log['tier'] == 1:
-            stats['tier1'] += 1
-        elif log['tier'] == 2:
-            stats['tier2'] += 1
-        elif log['tier'] == 3:
-            stats['tier3'] += 1
+    for log in logs:
+        t = log['tier']
+        if t == 0:   stats['clean'] += 1
+        elif t == 1: stats['tier1'] += 1
+        elif t == 2: stats['tier2'] += 1
+        elif t == 3: stats['tier3'] += 1
 
     active_sessions = {}
     current_time = time.time()
@@ -536,7 +632,8 @@ def monitor_dashboard():
         stats=stats,
         active_sessions=active_sessions,
         active_count=len(sessions),
-        logs=list(reversed(evaluation_logs[-50:]))
+        logs=logs,
+        db_online=db_online
     )
 
 
@@ -571,7 +668,8 @@ def init_session():
         'quantity': 1,
         'pages_visited': []
     }
-    print(f"\n[+] New session created: {session_id[:16]}...")
+    save_session_to_db(session_id, sessions[session_id])
+    print(f"\n[+] New session: {session_id[:16]}... from {request.remote_addr}")
     response = make_response(jsonify({'session_id': session_id, 'status': 'initialized'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -594,7 +692,6 @@ def track_action():
     if action:
         session['actions'].append(action)
         session['timestamps'].append(elapsed)
-
     if 'mouse_movements' in data:
         session['mouse_movements'] = data['mouse_movements']
     if 'quantity' in data:
@@ -616,17 +713,11 @@ def captcha_verified():
     data = request.get_json() or {}
     session_id = data.get('session_id', 'unknown')
     method = data.get('method', 'unknown')
-    proof = data.get('proof', {})
 
     print("\n" + "=" * 50)
-    print("✅ CAPTCHA VERIFICATION SUCCESS")
-    print("=" * 50)
+    print("CAPTCHA VERIFICATION SUCCESS")
     print(f"   Session: {session_id[:16]}...")
     print(f"   Method:  {method}")
-    if method == 'pow':
-        print(f"   Nonce:   {proof.get('nonce', 'N/A')}")
-        print(f"   Hash:    {proof.get('hash', 'N/A')[:20]}...")
-        print(f"   Time:    {proof.get('time', 'N/A')}s")
     print("=" * 50 + "\n")
 
     response = make_response(jsonify({'status': 'verified'}))
@@ -648,26 +739,28 @@ def evaluate_session():
     data = request.get_json() or {}
     session_id = data.get('session_id')
     force_tier = data.get('force_tier')
+    ip_address = request.remote_addr
 
     if not session_id or session_id not in sessions:
-        pattern = data.get('pattern', '')
-        duration = data.get('duration', 0)
-        quantity = int(data.get('quantity', 1))
-        qty_speed = data.get('qty_speed', 9999)
+        pattern        = data.get('pattern', '')
+        duration       = data.get('duration', 0)
+        quantity       = int(data.get('quantity', 1))
+        qty_speed      = data.get('qty_speed', 9999)
         mouse_movements = data.get('mouse_movements', 0)
-        session_id = 'LEGACY-' + secrets.token_urlsafe(8)
+        session_id     = 'LEGACY-' + secrets.token_urlsafe(8)
     else:
-        session = sessions[session_id]
-        pattern = ''.join(session['actions'])
-        duration = (time.time() - session['start_time']) * 1000
-        quantity = session['quantity']
+        session        = sessions[session_id]
+        pattern        = ''.join(session['actions'])
+        duration       = (time.time() - session['start_time']) * 1000
+        quantity       = session['quantity']
         mouse_movements = session['mouse_movements']
-        qty_speed = data.get('qty_speed', 9999)
+        qty_speed      = data.get('qty_speed', 9999)
 
     print("\n" + "=" * 60)
-    print("📊 EVALUATION REQUEST")
+    print("EVALUATION REQUEST")
     print("=" * 60)
     print(f"   Session ID    : {session_id[:20]}...")
+    print(f"   IP Address    : {ip_address}")
     print(f"   Pattern       : {pattern}")
     print(f"   Duration      : {duration:.0f}ms")
     print(f"   Quantity      : {quantity}")
@@ -676,25 +769,28 @@ def evaluate_session():
     print("=" * 60)
 
     if force_tier is not None:
-        tier = int(force_tier)
-        score = {1: 30, 2: 60, 3: 100}.get(tier, 0)
+        tier    = int(force_tier)
+        score   = {1: 30, 2: 60, 3: 100}.get(tier, 0)
         reasons = ["Client-side fast-path: HADSQC pattern + low mouse activity under 15s"]
 
-        print(f"⚡ CLIENT FAST-PATH: Tier {tier} (logged without server re-scoring)")
+        print(f"CLIENT FAST-PATH: Tier {tier}")
         print("=" * 60 + "\n")
 
-        evaluation_logs.append({
-            'time': datetime.now().strftime('%H:%M:%S'),
-            'session_id': session_id,
-            'pattern': pattern or 'N/A',
-            'duration': duration,
-            'quantity': quantity,
+        log_entry = {
+            'time':            datetime.now().strftime('%H:%M:%S'),
+            'session_id':      session_id,
+            'pattern':         pattern or 'N/A',
+            'duration':        duration,
+            'quantity':        quantity,
             'mouse_movements': mouse_movements,
-            'score': score,
-            'tier': tier,
-            'reasons': reasons
-        })
+            'score':           score,
+            'tier':            tier,
+            'reasons':         reasons,
+            'ip':              ip_address
+        }
+        evaluation_logs.append(log_entry)
         save_logs()
+        save_evaluation_to_db(log_entry)
 
         if session_id in sessions:
             del sessions[session_id]
@@ -703,7 +799,7 @@ def evaluate_session():
         response.headers["ngrok-skip-browser-warning"] = "true"
         return response
 
-    score = 0
+    score   = 0
     reasons = []
 
     if pattern == "HADSQC" and quantity == 1 and duration < 15000:
@@ -752,42 +848,45 @@ def evaluate_session():
 
     if score >= 100:
         tier = 3
-        print("🚫 TIER 3: Redirecting to ghost ticket")
+        print("TIER 3: Redirecting to ghost ticket")
         if pattern and not bot_tree.search(pattern):
             bot_tree.insert(pattern)
             if pattern not in learned_patterns:
                 learned_patterns.append(pattern)
                 save_learned_patterns()
-                print(f"🧠 LEARNED NEW PATTERN: '{pattern}' added to the bot-pattern blacklist")
+                print(f"LEARNED NEW PATTERN: '{pattern}'")
     elif score >= 60:
         tier = 2
-        print("🔒 TIER 2: CAPTCHA required")
+        print("TIER 2: CAPTCHA required")
     elif score >= 30:
         tier = 1
-        print("⚠️  TIER 1: Applying 3-second delay")
+        print("TIER 1: Applying 3-second delay")
         time.sleep(3)
     else:
         tier = 0
         reasons.append("No suspicious activity")
-        print("✅ TIER 0: Clean session")
+        print("TIER 0: Clean session")
 
-    print(f"\n   Final Score: {score}")
-    print(f"   Tier: {tier}")
-    print(f"   Reasons: {reasons}")
+    print(f"\n   Final Score : {score}")
+    print(f"   Tier        : {tier}")
+    print(f"   Reasons     : {reasons}")
     print("=" * 60 + "\n")
 
-    evaluation_logs.append({
-        'time': datetime.now().strftime('%H:%M:%S'),
-        'session_id': session_id,
-        'pattern': pattern or 'N/A',
-        'duration': duration,
-        'quantity': quantity,
+    log_entry = {
+        'time':            datetime.now().strftime('%H:%M:%S'),
+        'session_id':      session_id,
+        'pattern':         pattern or 'N/A',
+        'duration':        duration,
+        'quantity':        quantity,
         'mouse_movements': mouse_movements,
-        'score': score,
-        'tier': tier,
-        'reasons': reasons
-    })
+        'score':           score,
+        'tier':            tier,
+        'reasons':         reasons,
+        'ip':              ip_address
+    }
+    evaluation_logs.append(log_entry)
     save_logs()
+    save_evaluation_to_db(log_entry)
 
     if session_id in sessions:
         del sessions[session_id]
@@ -801,14 +900,20 @@ def evaluate_session():
 # 🚀 SERVER START
 # ==========================================
 if __name__ == '__main__':
+    init_supabase()
+
     print("\n" + "=" * 60)
-    print("🛡️  BOT DETECTION SERVER STARTING")
+    print("BOT DETECTION SERVER STARTING")
     print("=" * 60)
     print(f"   API Server    : http://localhost:8000")
     print(f"   Monitor       : http://localhost:8000/monitor")
-    print(f"   Restored      : {len(evaluation_logs)} saved evaluation(s) from {LOG_FILE}")
-    print(f"   Learned       : {len(learned_patterns)} self-learned pattern(s) from {PATTERNS_FILE}")
+    print(f"   Supabase      : {'Connected' if supabase_client else 'Not configured'}")
+    print(f"   Restored      : {len(evaluation_logs)} saved evaluation(s)")
+    print(f"   Learned       : {len(learned_patterns)} self-learned pattern(s)")
     print("=" * 60 + "\n")
 
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
+
+# Init Supabase on module load (for Render/Gunicorn)
+init_supabase()
