@@ -161,97 +161,67 @@ def run_bot(scenario_num):
         print("[Phase 2] On select page.")
 
         # =========================
-        # PHASE 3 - DATE + ZONE + SEAT (FIXED)
+        # PHASE 3 - DATE + ZONE + SEAT
         # =========================
         print("[Phase 3] Selecting date...")
-        time.sleep(2)  # Let page fully render
-
-        # Try to click date card with multiple fallback selectors
-        date_clicked = driver.execute_script("""
-            // Try multiple possible selectors
-            let dateCard = document.getElementById('date1-card') 
-                    || document.querySelector('[data-date]')
-                    || document.querySelector('.date-card');
-            if (dateCard) {
-                // Try calling chooseDate if it exists
-                if (typeof chooseDate === 'function') {
-                    chooseDate('22 Nov 2026 (Day 1 - Saturday)', dateCard);
-                } else {
-                    dateCard.click();
-                }
-                return true;
-            }
-            // Fallback: just set localStorage directly
-            localStorage.setItem('selected_date', '22 Nov 2026 (Day 1 - Saturday)');
-            if (typeof selectedDate !== 'undefined') selectedDate = '22 Nov 2026 (Day 1 - Saturday)';
-            return false;
-        """)
-        print(f"[Phase 3] Date {'clicked' if date_clicked else 'set via fallback'}.")
-        time.sleep(1)
-
-        print("[Phase 3] Selecting zone...")
-        zone_clicked = driver.execute_script("""
-            // Try multiple possible selectors for Rock Zone
-            let zoneBtn = document.getElementById('btn-rock')
-                    || document.querySelector('[data-zone="rock"]')
-                    || document.querySelector('.zone-rock')
-                    || document.querySelector('button[onclick*="rock"]')
-                    || Array.from(document.querySelectorAll('button, .zone-card')).find(
-                        el => el.textContent.toLowerCase().includes('rock')
-                    );
-            if (zoneBtn) {
-                zoneBtn.click();
-                return true;
-            }
-            // Fallback: set localStorage directly
-            localStorage.setItem('selected_zone', 'rock');
-            localStorage.setItem('selected_seat', 'Rock Zone (Standing) - RM 599');
-            return false;
-        """)
-        print(f"[Phase 3] Zone {'clicked' if zone_clicked else 'set via fallback'}.")
-        time.sleep(2)
-
-        # Set quantity in localStorage (won't crash even if UI elements missing)
-        driver.execute_script(f"""
-            localStorage.setItem('selected_qty', '{cfg["qty"]}');
-            localStorage.setItem('qty_select_speed', '85');
-        """)
-        print(f"[Phase 3] Quantity set to {cfg['qty']}.")
-
-        # Try to click seats
-        print("[Phase 3] Attempting seat selection...")
-        time.sleep(2)
-
-        for i in range(cfg["repeat_seat"]):
-            seat_result = driver.execute_script("""
-                let seat = document.querySelector('.seat.available') 
-                    || document.querySelector('.seat[data-sid="A1"]')
-                    || document.querySelector('.seat:not(.sold):not(.reserved):not(.unavailable)');
-                if (seat && !seat.disabled) {
-                    seat.click();
-                    return seat.dataset.sid || seat.id || 'clicked';
-                }
-                return null;
+        try:
+            WebDriverWait(driver, 8).until(
+            EC.element_to_be_clickable((By.ID, "date1-card"))
+            )
+            # Call chooseDate() directly instead of clicking the element
+            driver.execute_script("""
+                chooseDate('22 Nov 2026 (Day 1 - Saturday)', 
+                document.getElementById('date1-card'));
             """)
-            if seat_result:
-                print(f"[Phase 3] Bot clicked seat {seat_result} ({i+1}/{cfg['repeat_seat']})")
-            else:
-                print(f"[Phase 3] No clickable seat found ({i+1}/{cfg['repeat_seat']})")
+            print("[Phase 3] Date selected via chooseDate().")
+            time.sleep(1)
+        except TimeoutException:
+            # Fallback - set localStorage and selectedDate variable directly
+            driver.execute_script("""
+                localStorage.setItem('selected_date', '22 Nov 2026 (Day 1 - Saturday)');
+                selectedDate = '22 Nov 2026 (Day 1 - Saturday)';
+            """)
+            print("[Phase 3] Date set via fallback.")
+
+        print("[Phase 3] Selecting Rock Zone...")
+        WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.ID, "btn-rock"))
+        )
+        driver.execute_script("document.getElementById('btn-rock').click();")
+        time.sleep(2)
+
+        # Wait for seats to load from API
+        print("[Phase 3] Waiting for seats to load from API...")
+        try:
+            WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, ".seat.available"))
+            )
+            print("[Phase 3] Seats loaded — bot scanning for clickable seats...")
+        except TimeoutException:
+            print("[Phase 3] Seat API slow — continuing with localStorage injection.")
+
+        # Bot clicks available seats
+        for i in range(cfg["repeat_seat"]):
+            driver.execute_script("""
+                const seat = document.querySelector('.seat[data-sid="A1"]');
+                if (seat && !seat.disabled) seat.click();
+            """)
             time.sleep(0.3)
+            print(f"[Phase 3] Bot clicked seat A1 ({i+1}/{cfg['repeat_seat']})")
 
         # Scenario 3 — scan extra seat (bot scanning behaviour)
         if scenario_num == 3:
             time.sleep(0.2)
             driver.execute_script("""
-                let seat = document.querySelector('.seat[data-sid="A2"]')
-                        || document.querySelectorAll('.seat.available')[1];
+                const seat = document.querySelector('.seat[data-sid="A2"]');
                 if (seat && !seat.disabled) seat.click();
             """)
-            print("[Phase 3] Bot scanned extra seat.")
+            print("[Phase 3] Bot scanned extra seat A2.")
 
         time.sleep(1.8)
 
         # Force inject all seat data into localStorage
+        # Guarantees confirm page has correct data even if API was slow
         zone_label = "Rock Zone (Standing)"
         zone_key   = "rock"
         seat_id    = "A1"
@@ -263,7 +233,7 @@ def run_bot(scenario_num):
             localStorage.setItem('selected_zone',    '{zone_key}');
             localStorage.setItem('selected_seat',    '{zone_label} - RM {price}');
             localStorage.setItem('selected_qty',     '{qty}');
-            localStorage.setItem('qty_select_speed', '85');
+            localStorage.setItem('qty_select_speed', '300');
         """)
         print(f"[Phase 3] Seat data injected: {zone_label} Seat {seat_id} x{qty}")
 
@@ -284,24 +254,25 @@ def run_bot(scenario_num):
 
         time.sleep(1)
 
-        # Navigate to confirm
+
+        # Navigate to confirm — use goNext() if available, else direct nav
+        # Force set selectedDate variable before goNext
         driver.execute_script("""
-            if (typeof selectedDate === 'undefined' || !selectedDate) {
-                selectedDate = '22 Nov 2026 (Day 1 - Saturday)';
-            }
+            selectedDate = '22 Nov 2026 (Day 1 - Saturday)';
             localStorage.setItem('selected_date', '22 Nov 2026 (Day 1 - Saturday)');
             let p = localStorage.getItem('fyp_pattern') || 'HADS';
             if (!p.includes('Q')) p += 'Q';
             localStorage.setItem('fyp_pattern', p);
         """)
 
+        # Navigate to confirm
         go_next_exists = driver.execute_script("return typeof goNext === 'function';")
         if go_next_exists:
             driver.execute_script("goNext();")
         else:
             driver.get(f"{TARGET_SITE}/confirm.html")
 
-        # Dismiss any unexpected alerts
+        # Dismiss any unexpected alerts (e.g. "Please select a date first")
         try:
             WebDriverWait(driver, 2).until(EC.alert_is_present())
             unexpected = driver.switch_to.alert
@@ -312,7 +283,6 @@ def run_bot(scenario_num):
 
         WebDriverWait(driver, 15).until(EC.url_contains("confirm.html"))
         print("[Phase 3] Proceeded to confirmation.")
-
 
         # =========================
         # PHASE 4 - CONFIRM PAGE

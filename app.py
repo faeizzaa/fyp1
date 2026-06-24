@@ -26,8 +26,9 @@ def serve_static(filename):
 # ==========================================
 # 🗄️ SUPABASE DATABASE
 # ==========================================
-SUPABASE_URL = os.environ.get("https://bpvjejwusdjqrotdoehi.supabase.co")
-SUPABASE_KEY = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzQ2NjgsImV4cCI6MjA5NzgxMDY2OH0.bh3rkYVYB1NR9wu6ta-1-eVw2sxIWHaMLCqUO-93P0c")
+# ✅ CORRECT — Remove os.environ.get() entirely
+SUPABASE_URL = "[bpvjejwusdjqrotdoehi.supabase.co](https://bpvjejwusdjqrotdoehi.supabase.co)"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzQ2NjgsImV4cCI6MjA5NzgxMDY2OH0.bh3rkYVYB1NR9wu6ta-1-eVw2sxIWHaMLCqUO-93P0c"
 
 supabase_client = None
 
