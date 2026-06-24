@@ -309,7 +309,7 @@
 
   function backToZones() {
     selectedSeats.forEach(seatId => {
-      fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+      fetch(API_URL + "/seats/" + activeZone + "/release", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
@@ -325,7 +325,7 @@
     const wrap = document.getElementById("seat-grid-wrap");
     wrap.innerHTML = '<div class="seat-loading">Loading seats...</div>';
     try {
-      const res  = await fetch(NGROK_URL + "/seats/" + zone);
+      const res  = await fetch(API_URL + "/seats/" + zone);
       const data = await res.json();
       renderGrid(data.seats);
     } catch(e) {
@@ -367,7 +367,7 @@
 
   async function pickSeat(seatId, btn) {
     if (selectedSeats.includes(seatId)) {
-      await fetch(NGROK_URL + "/seats/" + activeZone + "/release", {
+      await fetch(API_URL + "/seats/" + activeZone + "/release", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
@@ -383,7 +383,7 @@
       return;
     }
     try {
-      const res = await fetch(NGROK_URL + "/seats/" + activeZone + "/reserve", {
+      const res = await fetch(API_URL + "/seats/" + activeZone + "/reserve", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
