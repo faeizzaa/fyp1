@@ -795,7 +795,7 @@ def evaluate_session():
         save_logs()
         save_evaluation_to_db(log_entry)
 
-        if session_id in sessions:
+        if tier == 3 and session_id in sessions:
             del sessions[session_id]
 
         response = make_response(jsonify({'score': score, 'tier': tier, 'reasons': reasons}))
