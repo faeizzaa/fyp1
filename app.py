@@ -34,16 +34,15 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def init_supabase():
-    global supabase_client
+    global supabase_client # <--- You declare 'supabase_client' as global here!
     if SUPABASE_URL and SUPABASE_KEY:
         try:
             from supabase import create_client
-            supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
+            # 2. You instantiate 'supabase_client' here
+            supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY) 
             print("[DB] Supabase connected successfully.")
         except Exception as e:
             print(f"[DB] Supabase connection failed: {e}")
-    else:
-        print("[DB] Supabase credentials not found — using in-memory fallback.")
 
 def save_evaluation_to_db(log):
     if not supabase_client:
