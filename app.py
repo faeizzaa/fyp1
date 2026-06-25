@@ -25,20 +25,20 @@ def serve_static(filename):
     return send_from_directory(FRONTEND_DIR, filename)
 
 # ==========================================
-# 🗄️ SUPABASE DATABASE
+# SUPABASE DATABASE
 # ==========================================
-# ✅ CORRECT — Remove os.environ.get() entirely
+
 SUPABASE_URL = "https://bpvjejwusdjqrotdoehi.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjIzNDY2OCwiZXhwIjoyMDk3ODEwNjY4fQ.eS0Vchi8-EX5-4v6_ybg1XUYH1kt_9Ld4Hpunmj6vd0"
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def init_supabase():
-    global supabase_client # <--- You declare 'supabase_client' as global here!
+    global supabase_client 
     if SUPABASE_URL and SUPABASE_KEY:
         try:
             from supabase import create_client
-            # 2. You instantiate 'supabase_client' here
+            
             supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY) 
             print("[DB] Supabase connected successfully.")
         except Exception as e:
