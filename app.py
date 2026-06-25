@@ -44,6 +44,7 @@ def init_supabase():
         except Exception as e:
             print(f"[DB] Supabase connection failed: {e}")
 
+init_supabase()
 def save_evaluation_to_db(log):
     if not supabase_client:
         return
