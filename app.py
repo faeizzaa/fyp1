@@ -31,30 +31,29 @@ def serve_static(filename):
 SUPABASE_URL = "https://bpvjejwusdjqrotdoehi.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJwdmpland1c2RqcXJvdGRvZWhpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MjIzNDY2OCwiZXhwIjoyMDk3ODEwNjY4fQ.eS0Vchi8-EX5-4v6_ybg1XUYH1kt_9Ld4Hpunmj6vd0"
 
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = None
 
 def init_supabase():
-    global supabase_client 
+    global supabase
     if SUPABASE_URL and SUPABASE_KEY:
         try:
-            from supabase import create_client
-            
-            supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY) 
+            supabase = create_client(SUPABASE_URL, SUPABASE_KEY) 
             print("[DB] Supabase connected successfully.")
         except Exception as e:
             print(f"[DB] Supabase connection failed: {e}")
 
 init_supabase()
+
 def save_evaluation_to_db(log):
-    if not supabase_client:
+    if not supabase:
         return
     try:
-        supabase_client.table("evaluation_logs").insert({
+        supabase.table("evaluation_logs").insert({
             "session_id":      log["session_id"],
             "pattern":         log["pattern"],
             "duration_ms":     int(log["duration"]),
             "quantity":        log["quantity"],
-            "mouse_movements": log["mouse_movements"],
+            "mouse_movement": log["mouse_movements"],
             "score":           log["score"],
             "tier":            log["tier"],
             "reasons":         ", ".join(log["reasons"]) if isinstance(log["reasons"], list) else log["reasons"],
@@ -65,15 +64,15 @@ def save_evaluation_to_db(log):
         print(f"[DB] Failed to save evaluation: {e}")
 
 def save_session_to_db(session_id, session):
-    if not supabase_client:
+    if not supabase:
         return
     try:
-        supabase_client.table("sessions").upsert({
+        supabase.table("sessions").upsert({
             "session_id":     session_id,
             "ip_address":     session.get("ip", "unknown"),
             "user_agent":     session.get("user_agent", ""),
             "pattern":        "".join(session.get("actions", [])),
-            "mouse_movements": session.get("mouse_movements", 0),
+            "mouse_movement": session.get("mouse_movements", 0),
             "quantity":       session.get("quantity", 1),
             "pages_visited":  ", ".join(session.get("pages_visited", [])),
             "start_time":     session.get("start_time", time.time())
@@ -82,10 +81,10 @@ def save_session_to_db(session_id, session):
         print(f"[DB] Failed to save session: {e}")
 
 def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
-    if not supabase_client:
+    if not supabase:
         return
     try:
-        supabase_client.table("seat_store").upsert({
+        supabase.table("seat_store").upsert({
             "zone":        zone,
             "seat_id":     seat_id,
             "status":      status,
@@ -96,10 +95,10 @@ def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
         print(f"[DB] Failed to save seat: {e}")
 
 def load_logs_from_db():
-    if not supabase_client:
+    if not supabase:
         return []
     try:
-        result = supabase_client.table("evaluation_logs")\
+        result = supabase.table("evaluation_logs")\
             .select("*")\
             .order("created_at", desc=True)\
             .limit(100)\
@@ -112,7 +111,7 @@ def load_logs_from_db():
                 "pattern":         row.get("pattern", "N/A"),
                 "duration":        row.get("duration_ms", 0),
                 "quantity":        row.get("quantity", 1),
-                "mouse_movements": row.get("mouse_movements", 0),
+                "mouse_movements": row.get("mouse_movement", 0),
                 "score":           row.get("score", 0),
                 "tier":            row.get("tier", 0),
                 "reasons":         row.get("reasons", "").split(", ") if row.get("reasons") else [],
