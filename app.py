@@ -53,7 +53,7 @@ def save_evaluation_to_db(log):
             "pattern":         log["pattern"],
             "duration_ms":     int(log["duration"]),
             "quantity":        log["quantity"],
-            "mouse_movement": log["mouse_movements"],
+            "mouse_movements": log["mouse_movements"],
             "score":           log["score"],
             "tier":            log["tier"],
             "reasons":         ", ".join(log["reasons"]) if isinstance(log["reasons"], list) else log["reasons"],
@@ -68,15 +68,15 @@ def save_session_to_db(session_id, session):
         return
     try:
         supabase.table("sessions").upsert({
-            "session_id":     session_id,
-            "ip_address":     session.get("ip", "unknown"),
-            "user_agent":     session.get("user_agent", ""),
-            "pattern":        "".join(session.get("actions", [])),
-            "mouse_movement": session.get("mouse_movements", 0),
-            "quantity":       session.get("quantity", 1),
-            "pages_visited":  ", ".join(session.get("pages_visited", [])),
-            "start_time":     session.get("start_time", time.time())
-        }).execute()
+            "session_id":      session_id,
+            "ip_address":      session.get("ip", "unknown"),
+            "user_agent":      session.get("user_agent", ""),
+            "pattern":         "".join(session.get("actions", [])),
+            "mouse_movements": session.get("mouse_movements", 0),
+            "quantity":        session.get("quantity", 1),
+            "pages_visited":   ", ".join(session.get("pages_visited", [])),
+            "start_time":      session.get("start_time", time.time())
+        }, on_conflict="session_id").execute()
     except Exception as e:
         print(f"[DB] Failed to save session: {e}")
 
@@ -111,7 +111,7 @@ def load_logs_from_db():
                 "pattern":         row.get("pattern", "N/A"),
                 "duration":        row.get("duration_ms", 0),
                 "quantity":        row.get("quantity", 1),
-                "mouse_movements": row.get("mouse_movement", 0),
+                "mouse_movements": row.get("mouse_movements", 0),
                 "score":           row.get("score", 0),
                 "tier":            row.get("tier", 0),
                 "reasons":         row.get("reasons", "").split(", ") if row.get("reasons") else [],
