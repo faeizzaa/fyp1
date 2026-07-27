@@ -605,7 +605,7 @@ DASHBOARD_HTML = """
 @app.route('/monitor')
 def monitor_dashboard():
     # Try to load from Supabase, fallback to in-memory
-    if supabase_client:
+    if supabase:
         logs = load_logs_from_db()
         db_online = True
     else:
@@ -940,7 +940,7 @@ if __name__ == '__main__':
     print("=" * 60)
     print(f"   API Server    : http://localhost:8000")
     print(f"   Monitor       : http://localhost:8000/monitor")
-    print(f"   Supabase      : {'Connected' if supabase_client else 'Not configured'}")
+    print(f"   Supabase      : {'Connected' if supabase else 'Not configured'}")
     print(f"   Restored      : {len(evaluation_logs)} saved evaluation(s)")
     print(f"   Learned       : {len(learned_patterns)} self-learned pattern(s)")
     print("=" * 60 + "\n")
