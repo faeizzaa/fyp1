@@ -33,6 +33,16 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase = None
 
+MYT_OFFSET = timedelta(hours=8)  # Malaysia Time = UTC+8, no DST, safe as a fixed offset
+
+def now_myt_iso():
+    """Current time in Malaysia local time, as an ISO string, for explicit
+    created_at writes. Supabase's Table Editor always displays the raw
+    stored value with no timezone conversion, so to have times 'tally'
+    there too (not just on /monitor), we write MYT directly instead of
+    relying on the column's `default now()` (which is UTC)."""
+    return (datetime.utcnow() + MYT_OFFSET).isoformat()
+
 def init_supabase():
     global supabase
     if SUPABASE_URL and SUPABASE_KEY:
@@ -49,6 +59,7 @@ def save_evaluation_to_db(log):
         return
     try:
         supabase.table("evaluation_logs").insert({
+            "created_at":      now_myt_iso(),
             "session_id":      log["session_id"],
             "pattern":         log["pattern"],
             "duration_ms":     int(log["duration"]),
@@ -68,6 +79,7 @@ def save_session_to_db(session_id, session):
         return
     try:
         supabase.table("sessions").upsert({
+            "created_at":      now_myt_iso(),
             "session_id":      session_id,
             "ip_address":      session.get("ip", "unknown"),
             "user_agent":      session.get("user_agent", ""),
@@ -85,6 +97,7 @@ def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
         return
     try:
         supabase.table("seat_store").upsert({
+            "created_at":  now_myt_iso(),
             "zone":        zone,
             "seat_id":     seat_id,
             "status":      status,
@@ -94,19 +107,16 @@ def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
     except Exception as e:
         print(f"[DB] Failed to save seat: {e}")
 
-MYT_OFFSET = timedelta(hours=8)  # Malaysia Time = UTC+8, no DST, safe as a fixed offset
-
 def format_myt(created_at_str):
-    """Convert a Supabase 'timestamp without time zone' string (stored as
-    UTC, since Postgres now() returns UTC) into Malaysia local time for
-    display. The DB itself stays in UTC - only the dashboard view changes."""
+    """created_at is now written as MYT directly at insert time (see
+    now_myt_iso() above), so this just formats it - no offset needed
+    anymore. Kept as a function in case the source ever changes back."""
     if not created_at_str:
         return ""
     try:
         raw = created_at_str[:26]  # trim to handle variable microsecond precision
-        dt_utc = datetime.fromisoformat(raw)
-        dt_myt = dt_utc + MYT_OFFSET
-        return dt_myt.strftime("%Y-%m-%d %H:%M:%S")
+        dt = datetime.fromisoformat(raw)
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         return created_at_str[:19].replace("T", " ")
 
