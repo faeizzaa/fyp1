@@ -180,6 +180,7 @@
         let pattern = localStorage.getItem('fyp_pattern') || "";
         pattern += "B";
         localStorage.setItem('fyp_pattern', pattern);
+        if (typeof trackAction === 'function') trackAction('B');
         window.location.href = 'confirm.html';
     }
 
@@ -213,6 +214,7 @@
             pattern += 'P';
             localStorage.setItem('fyp_pattern', pattern);
         }
+        if (typeof trackAction === 'function') trackAction('P');
 
         console.log("Current Global Multi-Bot Attack Count:", attemptCount);
 
@@ -228,6 +230,7 @@
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({ 
+                session_id: localStorage.getItem('fyp_session_id'),
                 pattern: pattern, 
                 duration: totalDurationMs,
                 quantity: qtySelected,

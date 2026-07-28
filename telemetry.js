@@ -6,6 +6,58 @@
     let clickCount = 0;
 
     // ==========================================
+    // 🆔 SERVER SESSION BOOTSTRAP (NEW)
+    // ==========================================
+    // Separate from the 'session_id' key used for seat reservation/hold
+    // tracking (do not touch that one). This is purely so the backend's
+    // `sessions` dict + Supabase `sessions` table get populated for real,
+    // as originally designed. It does NOT feed /evaluate's scoring - that
+    // still reads pattern/quantity/mouse straight from localStorage like
+    // before, so bot1/bot2/stress_test bots keep working unchanged.
+    const FYP_SESSION_KEY = 'fyp_session_id';
+
+    function bootstrapSession() {
+        const existing = localStorage.getItem(FYP_SESSION_KEY);
+        if (existing) return; // already have one for this journey (home.html clears it on a fresh visit)
+        if (typeof API_URL === 'undefined') return;
+
+        fetch(`${API_URL}/api/init-session`, { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if (data.session_id) {
+                    localStorage.setItem(FYP_SESSION_KEY, data.session_id);
+                }
+            })
+            .catch(err => console.warn('init-session failed:', err));
+    }
+
+    bootstrapSession();
+
+    // Exposed so each page's existing pattern-building code (home.html,
+    // select.html, confirm.html, payment.html) can report the same action
+    // letter to the server alongside its localStorage update. Fire-and-
+    // forget - this is logging only, never blocks navigation/checkout.
+    window.trackAction = function(action) {
+        if (typeof API_URL === 'undefined') return;
+        const sessionId = localStorage.getItem(FYP_SESSION_KEY);
+        if (!sessionId) return;
+
+        fetch(`${API_URL}/api/track-action`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                action: action,
+                page: window.location.pathname.split('/').pop() || 'home.html',
+                quantity: parseInt(localStorage.getItem('selected_qty') || '1'),
+                mouse_movements: typeof window.getMouseMoveCount === 'function'
+                    ? window.getMouseMoveCount()
+                    : parseInt(localStorage.getItem('fyp_mouse_moves') || '0')
+            })
+        }).catch(err => console.warn('track-action failed:', err));
+    };
+
+    // ==========================================
     // 🖱️ MOUSE MOVEMENT TRACKING (NEW)
     // ==========================================
     // Persists a cumulative mouse-movement count across the whole journey

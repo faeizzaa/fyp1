@@ -65,6 +65,7 @@
                 pattern += 'C';
                 localStorage.setItem('fyp_pattern', pattern);
             }
+            if (typeof trackAction === 'function') trackAction('C');
         };
 
 
@@ -72,6 +73,7 @@
             let pattern = localStorage.getItem('fyp_pattern') || "";
             pattern += "B";
             localStorage.setItem('fyp_pattern', pattern);
+            if (typeof trackAction === 'function') trackAction('B');
             window.history.back();
         }
 
@@ -138,6 +140,7 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
+                        session_id: localStorage.getItem('fyp_session_id'),
                         pattern: pattern,
                         duration: totalDurationMs,
                         quantity: qtySelected,
@@ -177,6 +180,7 @@
         "Content-Type": "application/json"
     },
     body: JSON.stringify({
+        session_id: localStorage.getItem('fyp_session_id'),
         pattern: pattern,
         duration: totalDurationMs,
         quantity: qtySelected,

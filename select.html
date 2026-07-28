@@ -282,6 +282,7 @@
     localStorage.setItem('qty_speed_start', Date.now());
     let pattern = localStorage.getItem('fyp_pattern') || 'HA';
     if (!pattern.includes('D')) { pattern += 'D'; localStorage.setItem('fyp_pattern', pattern); }
+    if (typeof trackAction === 'function') trackAction('D');
   }
 
   function chooseQty(qty, el) {
@@ -402,6 +403,7 @@
       let pattern = localStorage.getItem("fyp_pattern") || "HAD";
       let sCount = (pattern.match(/S/g) || []).length;
       if (sCount < 3) { pattern += "S"; localStorage.setItem("fyp_pattern", pattern); }
+      if (typeof trackAction === 'function') trackAction('S');
       updateSummary();
     } catch(e) {
       alert("Could not reserve seat. Please try again.");
@@ -429,10 +431,9 @@
     if (selectedSeats.length === 0) { alert("Please select at least one seat."); return; }
     let pattern = localStorage.getItem('fyp_pattern') || 'HADSS';
     if (!pattern.includes('Q')) { pattern += 'Q'; localStorage.setItem('fyp_pattern', pattern); }
+    if (typeof trackAction === 'function') trackAction('Q');
     window.location.href = 'confirm.html';
   }
 </script>
 </body>
 </html>
-
-

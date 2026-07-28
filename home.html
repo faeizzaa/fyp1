@@ -275,6 +275,11 @@
     </div>
 
     <script>
+        // Runs immediately at parse time - must happen before telemetry.js
+        // (loaded further down) calls bootstrapSession(), otherwise it would
+        // see a stale session id left over from the previous visit.
+        localStorage.removeItem('fyp_session_id');
+
         window.onload = function() {
             localStorage.removeItem('selected_event');
             localStorage.removeItem('selected_date');
@@ -288,6 +293,7 @@
             if(!localStorage.getItem('start_time')){ localStorage.setItem('start_time', Date.now()); }
             let pattern = localStorage.getItem('fyp_pattern') || "";
             if (!pattern.includes('H')) { pattern = "H" + pattern; localStorage.setItem('fyp_pattern', pattern); }
+            if (typeof trackAction === 'function') trackAction('H');
         };
 
         function scrollToEvents() {
@@ -299,6 +305,7 @@
             if (!pattern.includes('A')) { pattern += "A"; }
             localStorage.setItem('selected_event', eventName);
             localStorage.setItem('fyp_pattern', pattern);
+            if (typeof trackAction === 'function') trackAction('A');
             window.location.href = 'waitingroom.html';
         }
     </script>

@@ -94,6 +94,22 @@ def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
     except Exception as e:
         print(f"[DB] Failed to save seat: {e}")
 
+MYT_OFFSET = timedelta(hours=8)  # Malaysia Time = UTC+8, no DST, safe as a fixed offset
+
+def format_myt(created_at_str):
+    """Convert a Supabase 'timestamp without time zone' string (stored as
+    UTC, since Postgres now() returns UTC) into Malaysia local time for
+    display. The DB itself stays in UTC - only the dashboard view changes."""
+    if not created_at_str:
+        return ""
+    try:
+        raw = created_at_str[:26]  # trim to handle variable microsecond precision
+        dt_utc = datetime.fromisoformat(raw)
+        dt_myt = dt_utc + MYT_OFFSET
+        return dt_myt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return created_at_str[:19].replace("T", " ")
+
 def load_logs_from_db():
     if not supabase:
         return []
@@ -106,7 +122,7 @@ def load_logs_from_db():
         logs = []
         for row in result.data:
             logs.append({
-                "time":            row.get("created_at", "")[:19].replace("T", " "),
+                "time":            format_myt(row.get("created_at", "")),
                 "session_id":      row.get("session_id", "unknown"),
                 "pattern":         row.get("pattern", "N/A"),
                 "duration":        row.get("duration_ms", 0),
@@ -602,6 +618,25 @@ DASHBOARD_HTML = """
 </html>
 """
 
+def dedupe_logs_by_session(logs):
+    """/evaluate fires at two checkpoints per completed purchase - once
+    from confirm.html and again from payment.html - so a single
+    transaction attempt can produce 2+ rows in evaluation_logs. This
+    collapses that down to one row per session_id for dashboard display.
+    Assumes `logs` is already ordered most-recent-first, so the first
+    row seen per session_id is the furthest-progressed checkpoint for
+    that attempt (e.g. the payment-stage entry over the confirm-only
+    one, if both exist)."""
+    seen = set()
+    deduped = []
+    for log in logs:
+        sid = log.get('session_id')
+        if sid in seen:
+            continue
+        seen.add(sid)
+        deduped.append(log)
+    return deduped
+
 @app.route('/monitor')
 def monitor_dashboard():
     # Try to load from Supabase, fallback to in-memory
@@ -611,6 +646,8 @@ def monitor_dashboard():
     else:
         logs = list(reversed(evaluation_logs[-50:]))
         db_online = False
+
+    logs = dedupe_logs_by_session(logs)
 
     stats = {'clean': 0, 'tier1': 0, 'tier2': 0, 'tier3': 0}
     for log in logs:
@@ -742,21 +779,24 @@ def evaluate_session():
     force_tier = data.get('force_tier')
     ip_address = request.remote_addr
 
+    # Detection scoring always trusts the client-supplied telemetry below -
+    # this is a deliberate choice, not an oversight (see FYP write-up:
+    # server-authoritative tracking was considered but would require every
+    # page's business-logic function, not just click handlers, to report
+    # actions, and would need bot1/bot2/stress_test rebuilt + revalidated
+    # against it). Whether session_id matches a real tracked session only
+    # changes what gets *logged* below, never what gets *scored*.
+    pattern         = data.get('pattern', '')
+    duration        = data.get('duration', 0)
+    quantity        = int(data.get('quantity', 1))
+    qty_speed       = data.get('qty_speed', 9999)
+    mouse_movements = data.get('mouse_movements', 0)
 
     if not session_id or session_id not in sessions:
-        pattern        = data.get('pattern', '')
-        duration       = data.get('duration', 0)
-        quantity       = int(data.get('quantity', 1))
-        qty_speed      = data.get('qty_speed', 9999)
-        mouse_movements = data.get('mouse_movements', 0)
-        session_id     = 'LEGACY-' + secrets.token_urlsafe(8)
-    else:
-        session        = sessions[session_id]
-        pattern        = ''.join(session['actions'])
-        duration       = (time.time() - session['start_time']) * 1000
-        quantity       = session['quantity']
-        mouse_movements = session['mouse_movements']
-        qty_speed      = data.get('qty_speed', 9999)
+        # No real tracked session (e.g. init-session never fired, or this
+        # request came from a script hitting /evaluate directly) - fall
+        # back to a throwaway id just so every row still has one.
+        session_id = 'LEGACY-' + secrets.token_urlsafe(8)
 
     print("\n" + "=" * 60)
     print("EVALUATION REQUEST")
