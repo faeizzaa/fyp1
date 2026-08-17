@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, make_response, request, render_template_string, send_from_directory
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 import time
 import secrets
 import json
@@ -15,6 +16,14 @@ FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Render (and most hosts) put the app behind a reverse proxy, so the raw
+# TCP connection Flask sees comes from that proxy - not the real visitor.
+# request.remote_addr would otherwise always show 127.0.0.1 or an internal
+# IP. ProxyFix reads the real client IP out of X-Forwarded-For instead,
+# trusting exactly 1 proxy hop (Render's own edge), so request.remote_addr
+# resolves correctly everywhere it's already used below.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
 @app.route('/')
 def index():
