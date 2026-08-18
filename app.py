@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, make_response, request, render_template_string, send_from_directory
 from flask_cors import CORS
-from werkzeug.middleware.proxy_fix import ProxyFix
 import time
 import secrets
 import json
@@ -17,13 +16,17 @@ FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Render (and most hosts) put the app behind a reverse proxy, so the raw
-# TCP connection Flask sees comes from that proxy - not the real visitor.
-# request.remote_addr would otherwise always show 127.0.0.1 or an internal
-# IP. ProxyFix reads the real client IP out of X-Forwarded-For instead,
-# trusting exactly 1 proxy hop (Render's own edge), so request.remote_addr
-# resolves correctly everywhere it's already used below.
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+# Render sits the app behind more than one internal proxy hop (confirmed
+# by seeing an internal-looking 10.x.x.x address show up instead of a
+# real public IP), so rather than guess the exact hop count with
+# ProxyFix's x_for=N, read X-Forwarded-For directly and take the FIRST
+# entry - by HTTP convention that's always the original client, no
+# matter how many internal hops were appended after it.
+def get_client_ip():
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.remote_addr
 
 @app.route('/')
 def index():
@@ -720,13 +723,13 @@ def init_session():
         'actions': [],
         'timestamps': [],
         'mouse_movements': 0,
-        'ip': request.remote_addr,
+        'ip': get_client_ip(),
         'user_agent': request.headers.get('User-Agent', ''),
         'quantity': 1,
         'pages_visited': []
     }
     save_session_to_db(session_id, sessions[session_id])
-    print(f"\n[+] New session: {session_id[:16]}... from {request.remote_addr}")
+    print(f"\n[+] New session: {session_id[:16]}... from {get_client_ip()}")
     response = make_response(jsonify({'session_id': session_id, 'status': 'initialized'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -796,7 +799,7 @@ def evaluate_session():
     data = request.get_json() or {}
     session_id = data.get('session_id')
     force_tier = data.get('force_tier')
-    ip_address = request.remote_addr
+    ip_address = get_client_ip()
 
     # Detection scoring always trusts the client-supplied telemetry below -
     # this is a deliberate choice, not an oversight (see FYP write-up:
