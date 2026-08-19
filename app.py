@@ -115,9 +115,36 @@ def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
             "status":      status,
             "reserved_at": reserved_at,
             "session_id":  session_id
-        }).execute()
+        }, on_conflict="zone,seat_id").execute()
     except Exception as e:
         print(f"[DB] Failed to save seat: {e}")
+
+def load_session_from_db(session_id):
+    """The in-memory `sessions` dict can be wiped by a process restart
+    (Render's free tier can recycle the instance without it always
+    showing as a distinct Event) - if that happens mid-checkout, rebuild
+    the session from Supabase instead of losing continuity entirely."""
+    if not supabase or not session_id:
+        return None
+    try:
+        result = supabase.table("sessions").select("*").eq("session_id", session_id).limit(1).execute()
+        if not result.data:
+            return None
+        row = result.data[0]
+        pattern = row.get("pattern") or ""
+        return {
+            'start_time':      row.get("start_time") or time.time(),
+            'actions':         list(pattern),
+            'timestamps':      [0] * len(pattern),
+            'mouse_movements': row.get("mouse_movements", 0),
+            'ip':              row.get("ip_address", "unknown"),
+            'user_agent':      row.get("user_agent", ""),
+            'quantity':        row.get("quantity", 1),
+            'pages_visited':   row.get("pages_visited", "").split(", ") if row.get("pages_visited") else []
+        }
+    except Exception as e:
+        print(f"[DB] Failed to rehydrate session: {e}")
+        return None
 
 def format_myt(created_at_str):
     """created_at is now written as MYT directly at insert time (see
@@ -729,7 +756,7 @@ def init_session():
         'pages_visited': []
     }
     save_session_to_db(session_id, sessions[session_id])
-    print(f"\n[DEBUG init-session] created session_id={session_id!r}, total sessions now: {len(sessions)}")
+    print(f"\n[+] New session: {session_id[:16]}... from {get_client_ip()}")
     response = make_response(jsonify({'session_id': session_id, 'status': 'initialized'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -741,9 +768,11 @@ def track_action():
     session_id = data.get('session_id')
     action = data.get('action', '')
 
-    # TEMP DEBUG - remove once the session-loss issue is diagnosed
-    print(f"[DEBUG track-action] received session_id={session_id!r}")
-    print(f"[DEBUG track-action] known sessions right now: {list(sessions.keys())}")
+    if session_id and session_id not in sessions:
+        rehydrated = load_session_from_db(session_id)
+        if rehydrated:
+            sessions[session_id] = rehydrated
+            print(f"[Session] Rehydrated {session_id[:12]}... from Supabase (in-memory copy was missing)")
 
     if not session_id or session_id not in sessions:
         response = make_response(jsonify({'error': 'Invalid session'}), 400)
@@ -766,6 +795,12 @@ def track_action():
             session['pages_visited'].append(page)
 
     print(f"[Session {session_id[:12]}] Action: {action:12} | Pattern: {''.join(session['actions']):20} | Mouse: {session['mouse_movements']}")
+
+    # Keep Supabase in sync with every update, not just at creation -
+    # otherwise rehydration above would only ever recover an empty
+    # pattern (the DB copy was stuck at whatever it looked like when
+    # /api/init-session first ran).
+    save_session_to_db(session_id, session)
 
     response = make_response(jsonify({'status': 'tracked'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
@@ -805,10 +840,6 @@ def evaluate_session():
     force_tier = data.get('force_tier')
     ip_address = get_client_ip()
 
-    # TEMP DEBUG - remove once the session-loss issue is diagnosed
-    print(f"[DEBUG evaluate] received session_id={session_id!r}")
-    print(f"[DEBUG evaluate] known sessions right now: {list(sessions.keys())}")
-
     # Detection scoring always trusts the client-supplied telemetry below -
     # this is a deliberate choice, not an oversight (see FYP write-up:
     # server-authoritative tracking was considered but would require every
@@ -821,6 +852,12 @@ def evaluate_session():
     quantity        = int(data.get('quantity', 1))
     qty_speed       = data.get('qty_speed', 9999)
     mouse_movements = data.get('mouse_movements', 0)
+
+    if session_id and session_id not in sessions:
+        rehydrated = load_session_from_db(session_id)
+        if rehydrated:
+            sessions[session_id] = rehydrated
+            print(f"[Session] Rehydrated {session_id[:12]}... from Supabase (in-memory copy was missing)")
 
     if not session_id or session_id not in sessions:
         # No real tracked session (e.g. init-session never fired, or this
