@@ -729,7 +729,7 @@ def init_session():
         'pages_visited': []
     }
     save_session_to_db(session_id, sessions[session_id])
-    print(f"\n[+] New session: {session_id[:16]}... from {get_client_ip()}")
+    print(f"\n[DEBUG init-session] created session_id={session_id!r}, total sessions now: {len(sessions)}")
     response = make_response(jsonify({'session_id': session_id, 'status': 'initialized'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
@@ -740,6 +740,10 @@ def track_action():
     data = request.get_json() or {}
     session_id = data.get('session_id')
     action = data.get('action', '')
+
+    # TEMP DEBUG - remove once the session-loss issue is diagnosed
+    print(f"[DEBUG track-action] received session_id={session_id!r}")
+    print(f"[DEBUG track-action] known sessions right now: {list(sessions.keys())}")
 
     if not session_id or session_id not in sessions:
         response = make_response(jsonify({'error': 'Invalid session'}), 400)
@@ -800,6 +804,10 @@ def evaluate_session():
     session_id = data.get('session_id')
     force_tier = data.get('force_tier')
     ip_address = get_client_ip()
+
+    # TEMP DEBUG - remove once the session-loss issue is diagnosed
+    print(f"[DEBUG evaluate] received session_id={session_id!r}")
+    print(f"[DEBUG evaluate] known sessions right now: {list(sessions.keys())}")
 
     # Detection scoring always trusts the client-supplied telemetry below -
     # this is a deliberate choice, not an oversight (see FYP write-up:
