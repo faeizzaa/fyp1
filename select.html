@@ -23,11 +23,19 @@
 
     /* ── DATE CARDS ── */
     .date-card {
-      flex: 1; min-width: 140px;
+      flex: 1; min-width: 160px;
       background: #181c24;
       border: 2px solid #2a2d35;
       border-radius: 14px; padding: 18px;
       cursor: pointer; transition: all 0.2s;
+      text-align: center;
+    }
+    .date-badge {
+      display: inline-block;
+      background: #27ae60; color: white;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 12px; border-radius: 20px;
+      white-space: nowrap;
     }
     .date-card:hover {
       border-color: #6c5ce7 !important;
@@ -72,10 +80,11 @@
     .zone-btn.active { outline: 3px solid #a29bfe; outline-offset: 2px; transform: scale(1.04); }
     .zone-btn .zn { font-size: 13px; font-weight: 700; }
     .zone-btn .zp { font-size: 11px; opacity: 0.85; }
-    .zone-rock { background: #c0392b; width: 280px; height: 68px; }
-    .zone-cat1  { background: #6c5ce7; width: 200px; height: 62px; }
-    .zone-cat2  { background: #2980b9; width: 260px; height: 62px; }
-    .zone-cat3  { background: #27ae60; width: 125px; height: 62px; }
+    .zone-rock, .zone-cat1, .zone-cat2, .zone-cat3 { width: 260px; height: 64px; }
+    .zone-rock { background: #c0392b; }
+    .zone-cat1  { background: #6c5ce7; }
+    .zone-cat2  { background: #2980b9; }
+    .zone-cat3  { background: #27ae60; }
     .venue-legend { display: flex; gap: 16px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
     .vleg { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #aaa; }
     .vdot { width: 11px; height: 11px; border-radius: 50%; }
@@ -155,14 +164,14 @@
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a29bfe;font-weight:700;margin-bottom:6px;">Day 1</div>
       <div style="font-size:20px;font-weight:800;color:white;">22 Nov</div>
       <div style="font-size:12px;color:#aaa;margin-bottom:10px;">Saturday · 2026</div>
-      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Available</span>
+      <span class="date-badge">● Available</span>
     </div>
 
     <div class="date-card" id="date2-card" onclick="chooseDate('23 Nov 2026 (Day 2 - Sunday)', this)">
       <div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#a29bfe;font-weight:700;margin-bottom:6px;">Day 2</div>
       <div style="font-size:20px;font-weight:800;color:white;">23 Nov</div>
       <div style="font-size:12px;color:#aaa;margin-bottom:10px;">Sunday · 2026</div>
-      <span style="background:#27ae60;color:white;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;">● Available</span>
+      <span class="date-badge">● Available</span>
     </div>
 
   </div>
@@ -187,11 +196,8 @@
         </button>
       </div>
       <div class="zone-row">
-        <button class="zone-btn zone-cat3" id="btn-cat3a" onclick="selectZone('cat3', this)">
-          <span class="zn">Cat 3</span><span class="zp">RM 288</span>
-        </button>
-        <button class="zone-btn zone-cat3" id="btn-cat3b" onclick="selectZone('cat3', this)">
-          <span class="zn">Cat 3</span><span class="zp">RM 288</span>
+        <button class="zone-btn zone-cat3" id="btn-cat3" onclick="selectZone('cat3', this)">
+          <span class="zn">Category 3</span><span class="zp">RM 288</span>
         </button>
       </div>
     </div>
@@ -207,7 +213,7 @@
   <div id="seat-section">
     <div class="picker-header">
       <h3 id="picker-title">Select a seat</h3>
-      <button class="back-btn" onclick="backToZones()">← Change zone</button>
+      <button class="back-btn" onclick="backToZones()">Change zone</button>
     </div>
     <div class="screen-bar"></div>
     <div class="screen-txt">STAGE</div>
@@ -226,7 +232,7 @@
       <span id="sum-zone" style="color:#a29bfe;font-size:13px"></span>
     </div>
     <div class="sum-price" id="sum-price">RM —</div>
-    <button class="btn btn-primary" onclick="goNext()">Continue →</button>
+    <button class="btn btn-primary" onclick="goNext()">Continue</button>
   </div>
 </div>
 
