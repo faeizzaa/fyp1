@@ -807,52 +807,19 @@ def track_action():
     return response
 
 
-@app.route('/api/captcha-attempt', methods=['POST'])
-def captcha_attempt():
+@app.route('/api/captcha-verified', methods=['POST'])
+def captcha_verified():
     data = request.get_json() or {}
-    session_id = data.get('session_id') or 'unknown'
-    level = int(data.get('level', 1))
-    challenge_type = data.get('type', 'unknown')
-    success = bool(data.get('success'))
-    ip_address = get_client_ip()
-
-    if success:
-        tier    = 0
-        score   = 0
-        reasons = [f"Passed CAPTCHA level {level} ({challenge_type})"]
-    elif level >= 3:
-        # Failed the last, hardest level - this is the block/kick case.
-        tier    = 3
-        score   = 100
-        reasons = ["Blocked: failed all 3 CAPTCHA levels"]
-    else:
-        # Escalating but not yet blocked - still worth a mid-tier flag.
-        tier    = 2
-        score   = 30 * level
-        reasons = [f"Failed CAPTCHA level {level} ({challenge_type}) - escalating"]
+    session_id = data.get('session_id', 'unknown')
+    method = data.get('method', 'unknown')
 
     print("\n" + "=" * 50)
-    print(f"CAPTCHA ATTEMPT: level {level} ({challenge_type}) - {'PASS' if success else 'FAIL'}")
+    print("CAPTCHA VERIFICATION SUCCESS")
     print(f"   Session: {session_id[:16]}...")
+    print(f"   Method:  {method}")
     print("=" * 50 + "\n")
 
-    log_entry = {
-        'time':            datetime.now().strftime('%H:%M:%S'),
-        'session_id':      session_id,
-        'pattern':         f"CAPTCHA-L{level}-{challenge_type}-{'PASS' if success else 'FAIL'}",
-        'duration':        0,
-        'quantity':        0,
-        'mouse_movements': 0,
-        'score':           score,
-        'tier':            tier,
-        'reasons':         reasons,
-        'ip':              ip_address
-    }
-    evaluation_logs.append(log_entry)
-    save_logs()
-    save_evaluation_to_db(log_entry)
-
-    response = make_response(jsonify({'status': 'logged', 'tier': tier}))
+    response = make_response(jsonify({'status': 'verified'}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
 
