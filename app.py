@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, make_response, request, render_template_string, send_from_directory
 from flask_cors import CORS
+from functools import wraps
 import time
 import secrets
 import json
@@ -15,6 +16,29 @@ FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# ==========================================
+# 🔒 ADMIN-ONLY ROUTES (HTTP Basic Auth)
+# ==========================================
+# Credentials come from environment variables, not hardcoded, so they
+# never sit in GitHub. Set ADMIN_USERNAME / ADMIN_PASSWORD in Render's
+# Environment tab. The 'admin' / 'changeme123' fallbacks below only
+# exist so local testing doesn't crash if the env vars aren't set - do
+# not deploy to Render without overriding both.
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'changeme123')
+
+def requires_admin_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or auth.username != ADMIN_USERNAME or auth.password != ADMIN_PASSWORD:
+            return make_response(
+                'Authentication required.', 401,
+                {'WWW-Authenticate': 'Basic realm="Admin Dashboard"'}
+            )
+        return f(*args, **kwargs)
+    return decorated
 
 # Render sits the app behind more than one internal proxy hop (confirmed
 # by seeing an internal-looking 10.x.x.x address show up instead of a
@@ -104,20 +128,41 @@ def save_session_to_db(session_id, session):
     except Exception as e:
         print(f"[DB] Failed to save session: {e}")
 
-def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None):
+def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None, ip_address=None):
     if not supabase:
         return
     try:
-        supabase.table("seat_store").upsert({
+        payload = {
             "created_at":  now_myt_iso(),
             "zone":        zone,
             "seat_id":     seat_id,
             "status":      status,
             "reserved_at": reserved_at,
             "session_id":  session_id
-        }, on_conflict="zone,seat_id").execute()
+        }
+        if ip_address is not None:
+            payload["ip_address"] = ip_address
+        supabase.table("seat_store").upsert(payload, on_conflict="zone,seat_id").execute()
     except Exception as e:
         print(f"[DB] Failed to save seat: {e}")
+
+def count_tickets_sold_to_ip(ip_address):
+    """Lifetime count of tickets this IP has already had confirmed as
+    'sold' - used to enforce the per-IP purchase cap. Requires the
+    seat_store table to have an ip_address column (see migration note
+    near confirm_seat() below)."""
+    if not supabase or not ip_address or ip_address == 'unknown':
+        return 0
+    try:
+        result = supabase.table("seat_store") \
+            .select("id", count="exact") \
+            .eq("status", "sold") \
+            .eq("ip_address", ip_address) \
+            .execute()
+        return result.count or 0
+    except Exception as e:
+        print(f"[DB] Failed to count tickets for IP: {e}")
+        return 0
 
 def load_session_from_db(session_id):
     """The in-memory `sessions` dict can be wiped by a process restart
@@ -191,6 +236,27 @@ def load_logs_from_db():
 # 🗄️ IN-MEMORY SESSION STORAGE
 # ==========================================
 sessions = {}
+
+# Timestamps of recent /evaluate calls, for the dashboard's traffic-spike
+# alert. A deque with maxlen auto-discards old entries so this never
+# grows unbounded - it only ever needs to cover the last few minutes.
+from collections import deque
+evaluate_call_times = deque(maxlen=1000)
+
+def detect_traffic_spike(window_seconds=60, spike_threshold=8):
+    """Flags a spike if more than `spike_threshold` /evaluate calls
+    happened in the last `window_seconds`. A single real visitor
+    generates very few /evaluate calls (2 - one at confirm, one at
+    payment); a burst like this is characteristic of multiple bots
+    firing at once (e.g. stress_test.py), not organic traffic."""
+    now = time.time()
+    recent = [t for t in evaluate_call_times if now - t <= window_seconds]
+    return {
+        'is_spike':      len(recent) >= spike_threshold,
+        'count':         len(recent),
+        'window_seconds': window_seconds,
+        'threshold':     spike_threshold
+    }
 
 # ==========================================
 # 💾 FALLBACK — JSON FILE LOG
@@ -398,7 +464,7 @@ def confirm_seat(zone):
         seat["status"] = "sold"
         seat["reserved_at"] = None
 
-    save_seat_to_db(zone, seat_id, "sold")
+    save_seat_to_db(zone, seat_id, "sold", ip_address=get_client_ip())
     print(f"[Seat] Sold: {zone}/{seat_id}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "sold"}))
     response.headers["Access-Control-Allow-Origin"] = "*"
@@ -438,6 +504,7 @@ def release_seat(zone):
     return response
 
 @app.route('/seats/admin/<zone>', methods=['GET'])
+@requires_admin_auth
 def admin_seats(zone):
     with seat_lock:
         zone_data = seat_store.get(zone)
@@ -569,6 +636,28 @@ DASHBOARD_HTML = """
             font-family: monospace;
             color: #aaa;
         }
+        .spike-alert {
+            background: #3d1414;
+            border: 1px solid #f44336;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            animation: pulse-border 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: #f44336; }
+            50% { border-color: #ff8a80; }
+        }
+        .spike-alert-text strong { color: #ff8a80; font-size: 1.05rem; }
+        .spike-alert-text span { color: #ccc; font-size: 0.85rem; }
+        .spike-baseline {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -577,6 +666,19 @@ DASHBOARD_HTML = """
 
     <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
     <span class="auto-refresh">Auto-refreshes every 5 seconds</span>
+
+    {% if spike.is_spike %}
+    <div class="spike-alert">
+        <div class="spike-alert-text">
+            <strong>⚠️ Traffic Spike Detected</strong><br>
+            <span>{{ spike.count }} evaluation requests in the last {{ spike.window_seconds }} seconds (normal traffic is well under {{ spike.threshold }}) — possible coordinated bot attack.</span>
+        </div>
+    </div>
+    {% else %}
+    <div class="spike-baseline">
+        Recent traffic: {{ spike.count }} evaluation request{{ '' if spike.count == 1 else 's' }} in the last {{ spike.window_seconds }}s (spike alert triggers at {{ spike.threshold }}+)
+    </div>
+    {% endif %}
 
     <div class="stats-grid">
         <div class="stat-card clean">
@@ -687,6 +789,7 @@ def dedupe_logs_by_session(logs):
     return deduped
 
 @app.route('/monitor')
+@requires_admin_auth
 def monitor_dashboard():
     # Try to load from Supabase, fallback to in-memory
     if supabase:
@@ -714,13 +817,16 @@ def monitor_dashboard():
             'age': current_time - session['start_time']
         }
 
+    spike = detect_traffic_spike()
+
     return render_template_string(
         DASHBOARD_HTML,
         stats=stats,
         active_sessions=active_sessions,
         active_count=len(sessions),
         logs=logs,
-        db_online=db_online
+        db_online=db_online,
+        spike=spike
     )
 
 
@@ -807,19 +913,52 @@ def track_action():
     return response
 
 
-@app.route('/api/captcha-verified', methods=['POST'])
-def captcha_verified():
+@app.route('/api/captcha-attempt', methods=['POST'])
+def captcha_attempt():
     data = request.get_json() or {}
-    session_id = data.get('session_id', 'unknown')
-    method = data.get('method', 'unknown')
+    session_id = data.get('session_id') or 'unknown'
+    level = int(data.get('level', 1))
+    challenge_type = data.get('type', 'unknown')
+    success = bool(data.get('success'))
+    ip_address = get_client_ip()
+
+    if success:
+        tier    = 0
+        score   = 0
+        reasons = [f"Passed CAPTCHA level {level} ({challenge_type})"]
+    elif level >= 3:
+        # Failed the last, hardest level - this is the block/kick case.
+        tier    = 3
+        score   = 100
+        reasons = ["Blocked: failed all 3 CAPTCHA levels"]
+    else:
+        # Escalating but not yet blocked - still worth a mid-tier flag.
+        tier    = 2
+        score   = 30 * level
+        reasons = [f"Failed CAPTCHA level {level} ({challenge_type}) - escalating"]
 
     print("\n" + "=" * 50)
-    print("CAPTCHA VERIFICATION SUCCESS")
+    print(f"CAPTCHA ATTEMPT: level {level} ({challenge_type}) - {'PASS' if success else 'FAIL'}")
     print(f"   Session: {session_id[:16]}...")
-    print(f"   Method:  {method}")
     print("=" * 50 + "\n")
 
-    response = make_response(jsonify({'status': 'verified'}))
+    log_entry = {
+        'time':            datetime.now().strftime('%H:%M:%S'),
+        'session_id':      session_id,
+        'pattern':         f"CAPTCHA-L{level}-{challenge_type}-{'PASS' if success else 'FAIL'}",
+        'duration':        0,
+        'quantity':        0,
+        'mouse_movements': 0,
+        'score':           score,
+        'tier':            tier,
+        'reasons':         reasons,
+        'ip':              ip_address
+    }
+    evaluation_logs.append(log_entry)
+    save_logs()
+    save_evaluation_to_db(log_entry)
+
+    response = make_response(jsonify({'status': 'logged', 'tier': tier}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
 
@@ -835,6 +974,8 @@ def detect_agent():
 
 @app.route('/evaluate', methods=['POST'])
 def evaluate_session():
+    evaluate_call_times.append(time.time())
+
     data = request.get_json() or {}
     session_id = data.get('session_id')
     force_tier = data.get('force_tier')
@@ -1022,7 +1163,7 @@ def evaluate_session():
     save_logs()
     save_evaluation_to_db(log_entry)
 
-    if session_id in sessions:
+    if tier == 3 and session_id in sessions:
         del sessions[session_id]
 
     response = make_response(jsonify({
