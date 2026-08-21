@@ -380,7 +380,7 @@
         let textCaptchaAnswer = '';
         let mathCaptchaAnswer = 0;
         let sliderComplete = false;
-        let timerSeconds = 120;
+        let timerSeconds = 60;
         let timerInterval;
 
         const sessionId = localStorage.getItem('fyp_session_id') || 'unknown';
@@ -397,7 +397,7 @@
                     clearInterval(timerInterval);
                     showMessage('Time expired! Your reservation has been released.', 'error');
                     setTimeout(() => {
-                        window.location.href = 'home.html';
+                        window.location.href = 'error.html';
                     }, 2000);
                 }
             }, 1000);
