@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Tickago</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            background: #f8fafc;
+            color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+
+        .auth-heading {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .auth-heading h1 {
+            font-size: 1.5rem;
+            margin: 0 0 6px;
+        }
+
+        .auth-heading p {
+            margin: 0;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 28px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #6c5ce7;
+        }
+
+        .form-hint {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 13px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            background: #6c5ce7;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        .btn-submit:hover {
+            background: #5b4cc4;
+        }
+
+        .btn-submit:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        .auth-message {
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+            display: none;
+        }
+
+        .auth-message.error {
+            display: block;
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.88rem;
+            color: #64748b;
+        }
+
+        .auth-switch a {
+            color: #6c5ce7;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .auth-switch a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<nav style="background:#0f1115;padding:0 32px;height:62px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);"><div style="width:34px;height:34px;background:#6c5ce7;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;">T</div><span style="color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:-0.3px;">Ticka<span style="color:#a29bfe">go</span></span></nav>
+
+    <div class="auth-container">
+        <div class="auth-heading">
+            <h1>Create Account</h1>
+            <p>An account is required to complete checkout</p>
+        </div>
+
+        <div class="auth-card">
+            <div id="message" class="auth-message"></div>
+
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" autocomplete="username">
+                <div class="form-hint">At least 3 characters</div>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" autocomplete="new-password">
+                <div class="form-hint">At least 6 characters</div>
+            </div>
+
+            <button class="btn-submit" id="submit-btn" onclick="doRegister()">Create Account</button>
+
+            <div class="auth-switch">
+                Already have an account? <a id="login-link" href="login.html">Log In</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        function getNextParam() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('next') || 'confirm.html';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const next = getNextParam();
+            document.getElementById('login-link').href = `login.html?next=${encodeURIComponent(next)}`;
+        });
+
+        function showError(text) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'auth-message error';
+        }
+
+        function doRegister() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const next = getNextParam();
+
+            if (username.length < 3) {
+                showError('Username must be at least 3 characters.');
+                return;
+            }
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters.');
+                return;
+            }
+
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+
+            fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ username, password, next })
+            })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok) {
+                    showError(data.error || 'Registration failed.');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                    return;
+                }
+                window.location.href = data.redirect || 'confirm.html';
+            })
+            .catch(err => {
+                showError('Could not reach the server. Please try again.');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            });
+        }
+
+        document.getElementById('password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') doRegister();
+        });
+    </script>
+</body>
+</html>

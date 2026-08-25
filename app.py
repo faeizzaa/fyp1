@@ -1,5 +1,6 @@
-from flask import Flask, jsonify, make_response, request, render_template_string, send_from_directory
+from flask import Flask, jsonify, make_response, request, render_template_string, send_from_directory, session, redirect, url_for
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 import time
 import secrets
@@ -14,8 +15,53 @@ from datetime import datetime, timedelta
 # ==========================================
 FRONTEND_DIR = os.path.dirname(os.path.abspath(__file__))
 
-app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
-CORS(app, resources={r"/*": {"origins": "*"}})
+app = Flask(__name__, static_folder=None)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
+# Session cookie signing key. MUST be set via env var on Render - if this
+# falls back to a fresh random value every process start, every logged-in
+# user gets silently logged out on every restart (same class of problem
+# we hit with the in-memory sessions dict earlier). Set FLASK_SECRET_KEY
+# in Render's Environment tab to a long random string.
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))
+
+# ==========================================
+# 👤 USER ACCOUNTS (login/register gate before checkout)
+# ==========================================
+def get_current_user():
+    """Returns {'id':..,'username':..,'created_at':..} for the logged-in
+    user, or None. created_at is used for the 'new account, instant
+    purchase' detection signal in evaluate_session()."""
+    user_id = session.get('user_id')
+    if not user_id or not supabase:
+        return None
+    try:
+        result = supabase.table("users").select("*").eq("id", user_id).limit(1).execute()
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"[Auth] Failed to load current user: {e}")
+        return None
+
+def login_required_page(f):
+    """For HTML page routes - redirects to /login?next=<page> instead of
+    a bare 401, since a human needs somewhere to actually go."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('user_id'):
+            return redirect(f"/login?next={request.path}")
+        return f(*args, **kwargs)
+    return decorated
+
+def login_required_api(f):
+    """For JSON/API routes - returns a 401 the frontend JS can check for,
+    rather than an HTML redirect a fetch() call can't follow usefully."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('user_id'):
+            response = make_response(jsonify({'error': 'not_authenticated', 'redirect': '/login'}), 401)
+            return response
+        return f(*args, **kwargs)
+    return decorated
 
 # ==========================================
 # 🔒 ADMIN-ONLY ROUTES (HTTP Basic Auth)
@@ -56,8 +102,15 @@ def get_client_ip():
 def index():
     return send_from_directory(FRONTEND_DIR, 'home.html')
 
+# Pages that require a logged-in account to view at all - browsing
+# (home/waitingroom/select) stays open to everyone, the gate kicks in
+# right where checkout actually starts.
+CHECKOUT_GATED_PAGES = {'confirm.html', 'payment.html'}
+
 @app.route('/<path:filename>')
 def serve_static(filename):
+    if filename in CHECKOUT_GATED_PAGES and not session.get('user_id'):
+        return redirect(f"/login?next={filename}")
     return send_from_directory(FRONTEND_DIR, filename)
 
 # ==========================================
@@ -89,6 +142,87 @@ def init_supabase():
             print(f"[DB] Supabase connection failed: {e}")
 
 init_supabase()
+
+# ==========================================
+# 👤 AUTH ROUTES
+# ==========================================
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'GET':
+        return send_from_directory(FRONTEND_DIR, 'register.html')
+
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    next_page = data.get('next') or 'confirm.html'
+
+    if len(username) < 3 or len(password) < 6:
+        return jsonify({'error': 'Username must be 3+ chars, password 6+ chars'}), 400
+    if not supabase:
+        return jsonify({'error': 'Server database unavailable'}), 503
+
+    try:
+        existing = supabase.table("users").select("id").eq("username", username).limit(1).execute()
+        if existing.data:
+            return jsonify({'error': 'Username already taken'}), 409
+
+        password_hash = generate_password_hash(password)
+        result = supabase.table("users").insert({
+            "username": username,
+            "password_hash": password_hash
+        }).execute()
+
+        new_user = result.data[0]
+        session['user_id'] = new_user['id']
+        session['username'] = new_user['username']
+        print(f"[Auth] New account registered: {username} (id={new_user['id']})")
+
+        response = make_response(jsonify({'status': 'registered', 'redirect': f'/{next_page}'}))
+        return response
+    except Exception as e:
+        print(f"[Auth] Registration failed: {e}")
+        return jsonify({'error': 'Registration failed'}), 500
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'GET':
+        return send_from_directory(FRONTEND_DIR, 'login.html')
+
+    data = request.get_json() or {}
+    username = (data.get('username') or '').strip()
+    password = data.get('password') or ''
+    next_page = data.get('next') or 'confirm.html'
+
+    if not supabase:
+        return jsonify({'error': 'Server database unavailable'}), 503
+
+    try:
+        result = supabase.table("users").select("*").eq("username", username).limit(1).execute()
+        if not result.data or not check_password_hash(result.data[0]['password_hash'], password):
+            return jsonify({'error': 'Invalid username or password'}), 401
+
+        user = result.data[0]
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+        print(f"[Auth] Login: {username} (id={user['id']})")
+
+        response = make_response(jsonify({'status': 'logged_in', 'redirect': f'/{next_page}'}))
+        return response
+    except Exception as e:
+        print(f"[Auth] Login failed: {e}")
+        return jsonify({'error': 'Login failed'}), 500
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'status': 'logged_out'})
+
+@app.route('/api/whoami', methods=['GET'])
+def whoami():
+    """Lets pages check login state without a full page reload."""
+    if session.get('user_id'):
+        return jsonify({'logged_in': True, 'username': session.get('username')})
+    return jsonify({'logged_in': False})
 
 def save_evaluation_to_db(log):
     if not supabase:
@@ -128,7 +262,7 @@ def save_session_to_db(session_id, session):
     except Exception as e:
         print(f"[DB] Failed to save session: {e}")
 
-def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None, ip_address=None):
+def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None, ip_address=None, user_id=None):
     if not supabase:
         return
     try:
@@ -142,6 +276,8 @@ def save_seat_to_db(zone, seat_id, status, reserved_at=None, session_id=None, ip
         }
         if ip_address is not None:
             payload["ip_address"] = ip_address
+        if user_id is not None:
+            payload["user_id"] = user_id
         supabase.table("seat_store").upsert(payload, on_conflict="zone,seat_id").execute()
     except Exception as e:
         print(f"[DB] Failed to save seat: {e}")
@@ -162,6 +298,24 @@ def count_tickets_sold_to_ip(ip_address):
         return result.count or 0
     except Exception as e:
         print(f"[DB] Failed to count tickets for IP: {e}")
+        return 0
+
+def count_tickets_sold_to_user(user_id):
+    """Lifetime count of tickets this ACCOUNT has already had confirmed
+    as 'sold' - the per-account equivalent of count_tickets_sold_to_ip,
+    and a more reliable signal since accounts (unlike IPs) aren't shared
+    by multiple unrelated people on the same network."""
+    if not supabase or not user_id:
+        return 0
+    try:
+        result = supabase.table("seat_store") \
+            .select("id", count="exact") \
+            .eq("status", "sold") \
+            .eq("user_id", user_id) \
+            .execute()
+        return result.count or 0
+    except Exception as e:
+        print(f"[DB] Failed to count tickets for user: {e}")
         return 0
 
 def load_session_from_db(session_id):
@@ -450,6 +604,12 @@ def confirm_seat(zone):
         response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
         return response
 
+    # Backstop in case something reaches this endpoint without ever going
+    # through the confirm.html/payment.html page gate (e.g. a bot hitting
+    # the API directly).
+    if not session.get('user_id'):
+        return jsonify({"error": "not_authenticated", "redirect": "/login"}), 401
+
     data = request.get_json() or {}
     seat_id = data.get("seat_id")
     session_id = data.get("session_id")
@@ -464,8 +624,8 @@ def confirm_seat(zone):
         seat["status"] = "sold"
         seat["reserved_at"] = None
 
-    save_seat_to_db(zone, seat_id, "sold", ip_address=get_client_ip())
-    print(f"[Seat] Sold: {zone}/{seat_id}")
+    save_seat_to_db(zone, seat_id, "sold", ip_address=get_client_ip(), user_id=session.get('user_id'))
+    print(f"[Seat] Sold: {zone}/{seat_id} to user_id={session.get('user_id')}")
     response = make_response(jsonify({"success": True, "seat_id": seat_id, "status": "sold"}))
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type"
@@ -976,6 +1136,13 @@ def detect_agent():
 def evaluate_session():
     evaluate_call_times.append(time.time())
 
+    # Backstop matching confirm_seat() - confirm.html/payment.html are
+    # already gated at the page level, so a real visitor always has a
+    # session by the time this fires. This catches anything hitting the
+    # endpoint directly.
+    if not session.get('user_id'):
+        return jsonify({"error": "not_authenticated", "redirect": "/login"}), 401
+
     data = request.get_json() or {}
     session_id = data.get('session_id')
     force_tier = data.get('force_tier')
@@ -1141,6 +1308,32 @@ def evaluate_session():
         tier = 0
         reasons.append("No suspicious activity")
         print("TIER 0: Clean session")
+
+    # --- Account-based signals (only possible now that login is required) ---
+    current_user = get_current_user()
+    if current_user:
+        try:
+            account_created = datetime.fromisoformat(current_user['created_at'][:26])
+            account_age_seconds = (datetime.utcnow() - account_created).total_seconds()
+        except Exception:
+            account_age_seconds = None
+
+        if account_age_seconds is not None and account_age_seconds < 300:
+            # New account, immediately buying - a bot's classic pattern:
+            # register a throwaway account and purchase in the same breath.
+            if tier < 2:
+                tier = 2
+            reasons.append(f"New account (created {int(account_age_seconds)}s ago) attempting purchase")
+            print(f"NEW ACCOUNT SIGNAL: account age {int(account_age_seconds)}s -> Tier {tier}")
+
+        already_sold = count_tickets_sold_to_user(current_user['id'])
+        if already_sold + quantity > 5:
+            if tier < 2:
+                tier = 2
+            reasons.append(
+                f"Per-account ticket limit: {already_sold} already purchased + {quantity} requested exceeds 5-ticket cap"
+            )
+            print(f"PURCHASE LIMIT: {already_sold} already sold to user_id={current_user['id']}, +{quantity} requested -> Tier {tier}")
 
     print(f"\n   Final Score : {score}")
     print(f"   Tier        : {tier}")

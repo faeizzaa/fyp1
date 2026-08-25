@@ -8,7 +8,7 @@
     
 </head>
 <body>
-<nav style="background:#0f1115;padding:0 32px;height:62px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);"><div style="width:34px;height:34px;background:#6c5ce7;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;">T</div><span style="color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:-0.3px;">Ticka<span style="color:#a29bfe">go</span></span></nav>
+<nav style="background:#0f1115;padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);"><div style="display:flex;align-items:center;gap:10px;"><div style="width:34px;height:34px;background:#6c5ce7;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;">T</div><span style="color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:-0.3px;">Ticka<span style="color:#a29bfe">go</span></span></div><div id="user-status" style="color:#94a3b8;font-size:0.85rem;"></div></nav>
     <div class="container">
         <div class="stepper-wrapper">
             <div class="stepper-item completed"><div class="step-counter">1</div><div class="step-name">Select Concert</div></div>
@@ -44,6 +44,24 @@
 
     <script src="config.js"></script>
     <script src="telemetry.js"></script>
+
+    <script>
+        fetch(`${API_URL}/api/whoami`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                const el = document.getElementById('user-status');
+                if (data.logged_in) {
+                    el.innerHTML = `${data.username} &nbsp;|&nbsp; <a href="#" onclick="doLogout(event)" style="color:#a29bfe;">Log out</a>`;
+                }
+            })
+            .catch(() => {});
+
+        function doLogout(e) {
+            e.preventDefault();
+            fetch(`${API_URL}/logout`, { method: 'POST', credentials: 'include' })
+                .then(() => window.location.href = 'home.html');
+        }
+    </script>
 
     <script>
         window.onload = function() {
