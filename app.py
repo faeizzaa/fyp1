@@ -895,6 +895,7 @@ DASHBOARD_HTML = """
                 <th>Mouse</th>
                 <th>Score</th>
                 <th>Tier</th>
+                <th>Action</th>
                 <th>Reasons</th>
             </tr>
         </thead>
@@ -911,6 +912,7 @@ DASHBOARD_HTML = """
                     <td>{{ log.mouse_movements }}</td>
                     <td><strong>{{ log.score }}</strong></td>
                     <td><span class="tier-badge tier-{{ log.tier }}">Tier {{ log.tier }}</span></td>
+                    <td style="font-size:12px;color:#8be9fd">{{ log.action }}</td>
                     <td style="font-size:12px">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
                 </tr>
                 {% endfor %}
@@ -928,6 +930,37 @@ DASHBOARD_HTML = """
 </body>
 </html>
 """
+
+def derive_action_label(log):
+    """What the system actually DID for this row, based on real routing
+    logic (see confirm.html/payment.html/captcha.html) - not a guess.
+    Distinguishes CAPTCHA-attempt rows (pattern starts with 'CAPTCHA-L')
+    from normal full-checkout /evaluate rows, since a Tier 3 result means
+    something different depending on which one produced it."""
+    pattern = log.get('pattern') or ''
+    tier = log.get('tier', 0)
+
+    if pattern.startswith('CAPTCHA-L'):
+        # Format: CAPTCHA-L{level}-{type}-{PASS|FAIL}
+        parts = pattern.split('-')
+        level = parts[1].replace('L', '') if len(parts) > 1 else '?'
+        passed = pattern.endswith('PASS')
+        if passed:
+            return f"CAPTCHA passed (Level {level}) - sent to payment"
+        elif tier >= 3:
+            return "Blocked - failed all 3 CAPTCHA levels"
+        else:
+            return f"CAPTCHA failed (Level {level}) - escalated to Level {int(level) + 1}"
+
+    if tier == 0:
+        return "Clean - proceeded to payment"
+    elif tier == 1:
+        return "3s delay applied - proceeded to payment"
+    elif tier == 2:
+        return "CAPTCHA challenge triggered"
+    elif tier == 3:
+        return "Ghost ticket issued (fake success, no real seat)"
+    return "-"
 
 def dedupe_logs_by_session(logs):
     """/evaluate fires at two checkpoints per completed purchase - once
@@ -960,6 +993,8 @@ def monitor_dashboard():
         db_online = False
 
     logs = dedupe_logs_by_session(logs)
+    for log in logs:
+        log['action'] = derive_action_label(log)
 
     stats = {'clean': 0, 'tier1': 0, 'tier2': 0, 'tier3': 0}
     for log in logs:

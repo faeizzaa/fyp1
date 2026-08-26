@@ -92,7 +92,7 @@
             pattern += "B";
             localStorage.setItem('fyp_pattern', pattern);
             if (typeof trackAction === 'function') trackAction('B');
-            window.history.back();
+            window.location.href = 'select.html';
         }
 
         function lockButton(msg) {
