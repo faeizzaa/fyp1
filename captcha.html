@@ -47,6 +47,7 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
         }
 
+        /* Booking Reminder - matches confirm.html's delay-banner treatment */
         .booking-reminder {
             background: #f3f0ff;
             border: 1px solid #6c5ce7;
@@ -62,6 +63,7 @@
             color: #4c3fb0;
         }
 
+        /* Challenge Sections */
         .challenge-section {
             display: none;
         }
@@ -70,6 +72,7 @@
             display: block;
         }
 
+        /* Text CAPTCHA */
         .captcha-image-box {
             background: #1e293b;
             border-radius: 8px;
@@ -115,6 +118,7 @@
             background: rgba(255,255,255,0.18);
         }
 
+        /* Math Challenge */
         .math-challenge {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -137,6 +141,7 @@
             color: #64748b;
         }
 
+        /* Slider Challenge */
         .slider-challenge {
             margin-bottom: 16px;
         }
@@ -196,6 +201,7 @@
             color: #64748b;
         }
 
+        /* Input Fields */
         .captcha-input {
             width: 100%;
             padding: 13px;
@@ -230,6 +236,7 @@
             75% { transform: translateX(6px); }
         }
 
+        /* Buttons */
         .btn-verify {
             width: 100%;
             padding: 13px;
@@ -252,6 +259,7 @@
             cursor: not-allowed;
         }
 
+        /* Error/Success Messages */
         .message {
             padding: 11px;
             border-radius: 6px;
@@ -375,6 +383,14 @@
 
     <script src="config.js"></script>
     <script>
+        // ==========================================
+        // STATE MANAGEMENT
+        // ==========================================
+        // Levels escalate on failure: 1=math (easiest for humans, but
+        // weakest bot-resistance since the answer is plain DOM text) ->
+        // 2=text (same weakness, different mechanism) -> 3=slider
+        // (hardest for a scripted bot - needs a real drag gesture, not
+        // just .click() or reading a value). Fail all 3 -> blocked.
         const LEVEL_TYPES = { 1: 'math', 2: 'text', 3: 'slider' };
         let currentLevel = 1;
         let textCaptchaAnswer = '';
@@ -383,8 +399,14 @@
         let timerSeconds = 60;
         let timerInterval;
 
+        // Was sessionStorage.getItem('server_session_id') - wrong storage
+        // AND wrong key. The session rewire stores this in localStorage
+        // under 'fyp_session_id'.
         const sessionId = localStorage.getItem('fyp_session_id') || 'unknown';
 
+        // ==========================================
+        // TIMER
+        // ==========================================
         function startTimer() {
             timerInterval = setInterval(() => {
                 timerSeconds--;
@@ -397,14 +419,23 @@
                     clearInterval(timerInterval);
                     showMessage('Time expired! Your reservation has been released.', 'error');
                     setTimeout(() => {
-                        window.location.href = 'error.html';
+                        window.location.href = 'home.html';
                     }, 2000);
                 }
             }, 1000);
         }
 
+        // ==========================================
+        // LEVEL PROGRESSION (replaces free tab-switching)
+        // ==========================================
         function showLevel(level) {
             currentLevel = level;
+            // No visible level indicator by design - the visitor should
+            // never see that this is a 3-stage escalation. currentLevel
+            // is still tracked internally (drives which challenge shows,
+            // and gets sent to /api/captcha-attempt for the dashboard).
+
+            // Show only the current level's challenge section
             document.querySelectorAll('.challenge-section').forEach(sec => sec.classList.remove('active'));
             const type = LEVEL_TYPES[level];
             document.getElementById(`challenge-${type}`).classList.add('active');
@@ -415,6 +446,13 @@
             if (type === 'slider') initSlider();
         }
 
+        // ==========================================
+        // LOG EVERY ATTEMPT TO THE SERVER
+        // ==========================================
+        // Runs whether the attempt succeeded or failed - failures aren't
+        // just a local UI counter anymore, they show up in
+        // evaluation_logs / the /monitor dashboard like any other
+        // detection signal.
         function logCaptchaAttempt(type, level, success) {
             if (typeof API_URL === 'undefined') return Promise.resolve();
             return fetch(`${API_URL}/api/captcha-attempt`, {
@@ -430,19 +468,26 @@
         }
 
         // ==========================================
-        // FIXED RESULT HANDLER
+        // SHARED RESULT HANDLER
         // ==========================================
         function handleCaptchaResult(type, success) {
             logCaptchaAttempt(type, currentLevel, success);
 
             if (success) {
+                // /evaluate is stateless - it recomputes tier from the
+                // same pattern/quantity/mouse data every call, so
+                // payment.html's later /evaluate call would land on
+                // Tier 2 again and loop back here forever without this
+                // flag. Tier 3 still overrides this (see payment.html) -
+                // this only stops a REPEAT Tier 2 verdict.
+                localStorage.setItem('captcha_passed', 'true');
                 showMessage('✓ Verification successful!', 'success');
                 onVerificationSuccess(type);
-                return; // Stops further execution so it never triggers escalation on success!
+                return;
             }
 
-            // Failure handling path:
             if (currentLevel >= 3) {
+                // Failed the 3rd and final level - block/kick.
                 showMessage('Too many failed attempts. Access denied.', 'error');
                 clearInterval(timerInterval);
                 setTimeout(() => {
@@ -455,6 +500,9 @@
             setTimeout(() => showLevel(currentLevel + 1), 1200);
         }
 
+        // ==========================================
+        // MESSAGE DISPLAY
+        // ==========================================
         function showMessage(text, type) {
             const msg = document.getElementById('message');
             msg.textContent = text;
@@ -465,6 +513,9 @@
             document.getElementById('message').className = 'message';
         }
 
+        // ==========================================
+        // TEXT CAPTCHA
+        // ==========================================
         function generateTextCaptcha() {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let captcha = '';
@@ -486,6 +537,9 @@
             handleCaptchaResult('text', success);
         }
 
+        // ==========================================
+        // MATH CAPTCHA
+        // ==========================================
         function generateMathCaptcha() {
             const operations = ['+', '-', '×'];
             const op = operations[Math.floor(Math.random() * operations.length)];
@@ -524,6 +578,9 @@
             handleCaptchaResult('math', success);
         }
 
+        // ==========================================
+        // SLIDER CAPTCHA
+        // ==========================================
         function initSlider() {
             sliderComplete = false;
             const puzzle = document.getElementById('slider-puzzle');
@@ -574,6 +631,7 @@
                 }
             };
 
+            // Touch support
             puzzle.ontouchstart = (e) => {
                 isDragging = true;
                 startX = e.touches[0].clientX - puzzleLeft;
@@ -610,13 +668,109 @@
             }
         }
 
-        function onVerificationSuccess(method) {
-            clearInterval(timerInterval);
-            setTimeout(() => {
-                window.location.href = 'payment.html';
-            }, 1000);
+        // ==========================================
+        // PROOF OF WORK (Computational Challenge)
+        // ==========================================
+        async function startProofOfWork() {
+            const btn = document.getElementById('pow-btn');
+            const spinner = document.getElementById('pow-spinner');
+            const progress = document.getElementById('pow-progress');
+            const message = document.getElementById('pow-message');
+            
+            btn.disabled = true;
+            btn.textContent = 'Computing...';
+            message.textContent = 'Finding valid hash (this proves you\'re not a bot)...';
+            
+            const difficulty = 4; // Number of leading zeros required
+            const prefix = '0'.repeat(difficulty);
+            const challenge = sessionId + ':' + Date.now();
+            
+            let nonce = 0;
+            let found = false;
+            const startTime = performance.now();
+            const targetHashes = 50000; // Estimated hashes needed
+            
+            // Process in chunks to not freeze the UI
+            async function processChunk() {
+                const chunkSize = 1000;
+                
+                for (let i = 0; i < chunkSize; i++) {
+                    const data = challenge + ':' + nonce;
+                    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(data));
+                    const hashArray = Array.from(new Uint8Array(hashBuffer));
+                    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    if (hashHex.startsWith(prefix)) {
+                        found = true;
+                        return { nonce, hash: hashHex };
+                    }
+                    
+                    nonce++;
+                }
+                
+                // Update UI
+                const elapsed = (performance.now() - startTime) / 1000;
+                const hashRate = Math.floor(nonce / elapsed);
+                const progressPct = Math.min((nonce / targetHashes) * 100, 95);
+                
+                document.getElementById('pow-hashes').textContent = nonce.toLocaleString();
+                document.getElementById('pow-time').textContent = elapsed.toFixed(1) + 's';
+                document.getElementById('pow-rate').textContent = hashRate.toLocaleString() + '/s';
+                progress.style.width = progressPct + '%';
+                
+                return null;
+            }
+            
+            // Main loop
+            while (!found && nonce < 10000000) {
+                const result = await processChunk();
+                if (result) {
+                    // Success!
+                    const elapsed = (performance.now() - startTime) / 1000;
+                    
+                    spinner.className = 'pow-spinner complete';
+                    progress.style.width = '100%';
+                    message.textContent = '✓ Valid proof found!';
+                    
+                    document.getElementById('pow-hashes').textContent = nonce.toLocaleString();
+                    document.getElementById('pow-time').textContent = elapsed.toFixed(1) + 's';
+                    
+                    showMessage('✓ Verification successful!', 'success');
+                    
+                    // Send proof to server
+                    onVerificationSuccess('pow', {
+                        nonce: result.nonce,
+                        hash: result.hash,
+                        time: elapsed
+                    });
+                    return;
+                }
+                
+                // Allow UI to update
+                await new Promise(r => setTimeout(r, 0));
+            }
+            
+            // Failed (shouldn't happen with reasonable difficulty)
+            btn.disabled = false;
+            btn.textContent = '⚡ Retry Verification';
+            message.textContent = 'Verification timed out. Please try again.';
         }
 
+        // ==========================================
+        // SUCCESS HANDLER
+        // ==========================================
+        function onVerificationSuccess(method) {
+            clearInterval(timerInterval);
+            // logCaptchaAttempt() already fired from handleCaptchaResult()
+            // just before this was called - just proceed to payment.
+            setTimeout(() => {
+                window.location.href = 'payment.html';
+            }, 1500);
+        }
+
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             showLevel(1);
             startTimer();

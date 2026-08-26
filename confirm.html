@@ -211,6 +211,13 @@
 
     console.log("SERVER RESPONSE =", data);
 
+    // Same stateless-evaluate loop fix as payment.html: don't send
+    // someone back through captcha.html if they already passed it -
+    // Tier 3 still always wins regardless.
+    if (data.tier === 2 && localStorage.getItem('captcha_passed') === 'true') {
+        data.tier = 0;
+    }
+
     switch(data.tier){
 
         case 1:

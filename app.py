@@ -1263,6 +1263,26 @@ def evaluate_session():
         score += 50
         reasons.append("Queue gate bypassed (skipped waiting room)")
 
+    # New-account signal: weighted, not a hard override. A brand new
+    # account buying immediately isn't inherently suspicious - most real
+    # buyers for a hot on-sale event register minutes (or seconds)
+    # before purchasing. This only matters when COMBINED with other
+    # bot-like behavior above (no mouse movement, instant qty, known-bad
+    # pattern) - those already push the score up on their own, this just
+    # adds a bit more weight when a fresh account is also part of the
+    # picture, the same way every other signal here works.
+    current_user = get_current_user()
+    if current_user:
+        try:
+            account_created = datetime.fromisoformat(current_user['created_at'][:26])
+            account_age_seconds = (datetime.utcnow() - account_created).total_seconds()
+        except Exception:
+            account_age_seconds = None
+
+        if account_age_seconds is not None and account_age_seconds < 30:
+            score += 20
+            reasons.append(f"New account (created {int(account_age_seconds)}s ago)")
+
     # Retrieve previous cumulative score from session or request
     cumulative_score = int(data.get('cumulative_score', 0))
     total_score = score + cumulative_score
@@ -1309,23 +1329,11 @@ def evaluate_session():
         reasons.append("No suspicious activity")
         print("TIER 0: Clean session")
 
-    # --- Account-based signals (only possible now that login is required) ---
-    current_user = get_current_user()
+    # Per-account lifetime ticket cap: this one stays a hard rule (not a
+    # weighted score) since exceeding your own stated purchase limit is
+    # an unambiguous policy violation, unlike account age which is only
+    # weak circumstantial evidence.
     if current_user:
-        try:
-            account_created = datetime.fromisoformat(current_user['created_at'][:26])
-            account_age_seconds = (datetime.utcnow() - account_created).total_seconds()
-        except Exception:
-            account_age_seconds = None
-
-        if account_age_seconds is not None and account_age_seconds < 300:
-            # New account, immediately buying - a bot's classic pattern:
-            # register a throwaway account and purchase in the same breath.
-            if tier < 2:
-                tier = 2
-            reasons.append(f"New account (created {int(account_age_seconds)}s ago) attempting purchase")
-            print(f"NEW ACCOUNT SIGNAL: account age {int(account_age_seconds)}s -> Tier {tier}")
-
         already_sold = count_tickets_sold_to_user(current_user['id'])
         if already_sold + quantity > 5:
             if tier < 2:

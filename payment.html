@@ -249,7 +249,7 @@
                 alert("Tier 3 Active: Suspicious activity detected.");
                 window.location.href = 'ghost_ticket.html';
 
-            } else if (data.tier === 2) {
+            } else if (data.tier === 2 && localStorage.getItem('captcha_passed') !== 'true') {
 
                 alert("Tier 2 Active: Bot injection signature detected. Transferring to verification portal.");
                 window.location.href = 'captcha.html';
