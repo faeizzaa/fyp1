@@ -2,6 +2,7 @@ import time
 import os
 import shutil
 import traceback
+import uuid
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -27,6 +28,13 @@ from webdriver_manager.chrome import ChromeDriverManager
 #                      qty_speed<500ms +40) so the sum clears the
 #                      100-point Tier 3 cutoff in app.py regardless
 #                      of duration/mouse noise -> ghost_ticket.html.
+#
+# NOTE: confirm.html and payment.html are now gated behind a login
+# (see CHECKOUT_GATED_PAGES in app.py) - a session with no logged-in
+# user gets redirected to /login before ever reaching those pages.
+# Phase 3.5 below registers a disposable throwaway account so the
+# bot can actually reach checkout instead of silently dead-ending on
+# the login page.
 # ==========================================================
 
 
@@ -70,7 +78,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
 
     try:
         # PHASE 1 - WAITING ROOM ENTRY
-        print(f"{tag} Target entry initiated: {target_url}")
+        print(f"{tag} [Phase 1] Bypassing waiting room...")
         driver.get(target_url)
 
         WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "enter-btn")))
@@ -80,22 +88,29 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         """)
         time.sleep(1)
         driver.execute_script("document.getElementById('enter-btn').click();")
+        print(f"{tag} [Phase 1] Queue gate bypassed — localStorage initialized.")
 
         # PHASE 2 - SALE LIVE GATE
+        print(f"{tag} [Phase 2] Navigating to select page...")
         WebDriverWait(driver, 10).until(EC.url_contains("salelive.html"))
         WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, "buy-btn")))
         driver.execute_script("enterSale();")
 
-        # PHASE 3 - SEAT SELECTION
         WebDriverWait(driver, 10).until(EC.url_contains("select.html"))
+        print(f"{tag} [Phase 2] On select page.")
+
+        # PHASE 3 - SEAT SELECTION
+        print(f"{tag} [Phase 3] Selecting date...")
         date_card = WebDriverWait(driver, 10).until(
             EC.element_to_be_clickable((By.CLASS_NAME, "date-card"))
         )
         driver.execute_script("arguments[0].click();", date_card)
+        print(f"{tag} [Phase 3] Date clicked.")
         time.sleep(0.5)
 
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "btn-rock")))
         driver.execute_script("document.getElementById('btn-rock').click();")
+        print(f"{tag} [Phase 3] Zone selected.")
         time.sleep(0.5)
 
         WebDriverWait(driver, 10).until(
@@ -105,6 +120,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
             const seat = document.querySelector('.seat[data-sid="A1"]');
             if (seat && seat.classList.contains('available')) { seat.click(); }
         """)
+        print(f"{tag} [Phase 3] Seat A1 selected.")
 
         if behavior == "tier2":
             # Human-mimic gap + forced qty/pattern override to push into
@@ -136,14 +152,46 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
 
         driver.execute_script("goNext();")
 
+        # PHASE 3.5 - AUTH
+        # confirm.html / payment.html are gated behind a logged-in session
+        # (see CHECKOUT_GATED_PAGES in app.py). Without this, goNext() above
+        # gets redirected to /login and the bot dead-ends there - nothing
+        # ever reaches /evaluate, so nothing ever reaches Supabase either.
+        print(f"{tag} [Phase 3.5] Checking for login gate...")
+        WebDriverWait(driver, 10).until(
+            lambda d: "confirm.html" in d.current_url or "login" in d.current_url
+        )
+
+        if "login" in driver.current_url:
+            bot_username = f"stressbot_{bot_id}_{uuid.uuid4().hex[:6]}"
+            print(f"{tag} [Phase 3.5] Gated — registering throwaway account: {bot_username}")
+            driver.execute_script(f"""
+                fetch('/register', {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{
+                        username: '{bot_username}',
+                        password: 'StressTest123',
+                        next: 'confirm.html'
+                    }})
+                }})
+                .then(res => res.json())
+                .then(data => {{ window.location.href = data.redirect || 'confirm.html'; }});
+            """)
+            WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
+            print(f"{tag} [Phase 3.5] Account ready, reached confirm.html.")
+        else:
+            print(f"{tag} [Phase 3.5] Already authenticated, no gate hit.")
+
         # PHASE 4 - CONFIRMATION
-        WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
+        print(f"{tag} [Phase 4] Filling checkout form...")
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
         driver.execute_script(f"""
             document.getElementById('fullname').value = 'StressBot {bot_id}';
             document.getElementById('email').value = 'bot{bot_id}@stress.test';
         """)
         driver.execute_script("validateAndCheckout();")
+        print(f"{tag} [Phase 4] Checkout submitted.")
 
         # SECURITY INTERCEPT HANDLER
         try:
@@ -164,6 +212,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
             print(f"{tag} No blocking dialog intercepted.")
 
         # PHASE 5 - FINAL ROUTE, with a short poll instead of a blind sleep
+        print(f"{tag} [Phase 5] Waiting for final route...")
         landing = driver.current_url
         for _ in range(15):
             landing = driver.current_url
@@ -171,7 +220,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
                 break
             time.sleep(1)
 
-        print(f"📊 {tag} FINAL ROUTE -> {landing}")
+        print(f"📊 {tag} [Phase 5] FINAL ROUTE -> {landing}")
         if "ghost_ticket.html" in landing:
             print(f"{tag} RESULT: TIER 3 (Ghost Ticket)")
         elif "captcha.html" in landing:
