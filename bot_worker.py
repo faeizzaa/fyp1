@@ -74,6 +74,39 @@ def register_throwaway_account(driver, bot_id):
     return True
 
 
+def select_seats(driver, count, delay_between=0.3):
+    """Clicks `count` DISTINCT available seats through the real
+    pickSeat() UI handler - not a hardcoded seat ID, and not a
+    localStorage override. Each click triggers a real async
+    /seats/<zone>/reserve call, so the server actually reserves that
+    many real seats, and selected_qty in localStorage ends up reflecting
+    genuine clicks via updateSummary() rather than a spoofed number.
+    Querying fresh each time (instead of hardcoding e.g. "A1") also
+    avoids two bots running concurrently (see bot_runner.py's `all`
+    mode) from colliding on the same seat."""
+    clicked_sids = []
+    for _ in range(count):
+        def get_next_available(d):
+            script = """
+                const clicked = arguments[0];
+                const seats = document.querySelectorAll('.seat.available');
+                for (const s of seats) {
+                    if (!clicked.includes(s.dataset.sid)) return s.dataset.sid;
+                }
+                return null;
+            """
+            return d.execute_script(script, clicked_sids)
+
+        sid = WebDriverWait(driver, 5).until(lambda d: get_next_available(d))
+        driver.execute_script("""
+            const sid = arguments[0];
+            const seat = document.querySelector('.seat[data-sid="' + sid + '"]');
+            if (seat) seat.click();
+        """, sid)
+        clicked_sids.append(sid)
+        time.sleep(delay_between)
+    return clicked_sids
+
 def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
     tag = f"[Bot-{bot_id}:{behavior}]"
     print_header(bot_id, behavior, target_url)
@@ -153,15 +186,22 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 3] Seat map opened.")
         time.sleep(0.5)
 
-        print(f"[Phase 3] Selecting seat A1...")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".seat.available"))
         )
-        driver.execute_script("""
-            const seat = document.querySelector('.seat[data-sid="A1"]');
-            if (seat && seat.classList.contains('available')) { seat.click(); }
-        """)
-        print(f"[Phase 3] Seat selected.")
+
+        if behavior == "tier3":
+            # Genuinely select the max 5 seats through the real UI
+            # (rather than clicking 1 seat and faking selected_qty),
+            # clicked back-to-back with minimal delay - the actual max
+            # ticket purchase, done as fast as a bot plausibly could.
+            print(f"[Phase 3] Selecting 5 seats (max purchase) as fast as possible...")
+            sids = select_seats(driver, 5, delay_between=0.1)
+            print(f"[Phase 3] Seats selected: {', '.join(sids)}")
+        else:
+            print(f"[Phase 3] Selecting seat...")
+            sids = select_seats(driver, 1, delay_between=0.1)
+            print(f"[Phase 3] Seat selected: {sids[0] if sids else 'none'}")
 
         if behavior == "tier2":
             print(f"[Phase 3] Injecting Tier 2 behavior...")
@@ -177,13 +217,16 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
             print(f"[Phase 3] Behavior parameters injected.")
             time.sleep(0.5)
         elif behavior == "tier3":
-            print(f"[Phase 3] Injecting Tier 3 behavior...")
+            # selected_qty is now genuinely 5 from real clicks above - only
+            # the pattern needs an explicit nudge, since the site's own
+            # tracking caps accumulated 'S' letters at 3 regardless of how
+            # many seats are actually clicked, so 5 real clicks wouldn't
+            # naturally reach the exact seeded bad-pattern match on its own.
+            print(f"[Phase 3] Injecting Tier 3 pattern signature...")
             driver.execute_script("""
-                localStorage.setItem('selected_qty', '5');
-                localStorage.setItem('qty_select_speed', '150');
                 localStorage.setItem('fyp_pattern', 'HADSSQC');
             """)
-            print(f"[Phase 3] Behavior parameters injected.")
+            print(f"[Phase 3] Pattern injected.")
         else:
             time.sleep(0.5)
 
