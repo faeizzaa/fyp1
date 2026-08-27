@@ -191,14 +191,23 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         driver.execute_script("goNext();")
 
         # PHASE 4 - CONFIRMATION / SECURITY ROUTING
-        print(f"[Phase 4] Submitting checkout action...")
-        
+        # goNext() triggers an async navigation (window.location.href),
+        # so the browser may still be on select.html for a moment after
+        # this call returns. Without waiting here, validateAndCheckout()
+        # doesn't exist yet on whatever page is still loaded, the next
+        # execute_script silently does nothing, and /evaluate never
+        # fires - this was why bots intermittently never showed up in
+        # evaluation_logs even though registration (a separate, earlier
+        # request) had already succeeded.
+        WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
+        WebDriverWait(driver, 10).until(
+            lambda d: d.execute_script("return typeof validateAndCheckout === 'function';")
+        )
+        print(f"[Phase 4] Confirm page loaded. Submitting checkout action...")
+
         if behavior == "tier3":
             print(f"[Phase 4] Tier 3 expected block - checking response...")
-            try:
-                driver.execute_script("if(typeof validateAndCheckout === 'function') { validateAndCheckout(); }")
-            except Exception:
-                pass
+            driver.execute_script("validateAndCheckout();")
             time.sleep(2)
         else:
             try:
