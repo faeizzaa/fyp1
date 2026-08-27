@@ -15,23 +15,6 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
-# ==========================================================
-# 🤖 GENERIC STRESS-TEST BOT WORKER
-# Parameterized version of bot1new.py / bot2.py so N of these
-# can run at once (each process gets its own profile dir,
-# remote-debugging port, and window position).
-#
-# behavior="tier1" -> rapid clicks, no mouse telemetry, single
-#                      seat, meant to land on Tier 1 fast-path.
-# behavior="tier2" -> injects qty override + timing pattern
-#                      meant to land on Tier 2 (CAPTCHA).
-# behavior="tier3" -> stacks three independent scoring signals
-#                      (known bad pattern +40, qty=5 +40,
-#                      qty_speed<500ms +40) so the sum clears the
-#                      100-point Tier 3 cutoff in app.py regardless
-#                      of duration/mouse noise -> ghost_ticket.html.
-# ==========================================================
-
 BEHAVIOR_INFO = {
     "tier1": {
         "title": "Tier 1 Trigger",
@@ -63,14 +46,6 @@ def print_header(bot_id, behavior, target_url):
     print()
 
 def register_throwaway_account(driver, bot_id):
-    """confirm.html/payment.html and /evaluate itself now require a
-    logged-in account. Registers via an in-browser fetch() (not the
-    `requests` library) so the resulting session cookie lands in the
-    same cookie jar Selenium's browser actually uses - a cookie set
-    outside the browser wouldn't be sent with the browser's own requests.
-    Must be called after driver.get() has already loaded a tickago.
-    onrender.com page, since fetch('/register') is same-origin relative.
-    """
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
     username = f"bot{bot_id}_{suffix}"
     password = "BotPass123!"
@@ -100,20 +75,20 @@ def register_throwaway_account(driver, bot_id):
 
 
 def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
-    tag = f"[Bot-{bot_id}:{behavior}]"
+    tag =[cite: 21] f"[Bot-{bot_id}:{behavior}]"
     print_header(bot_id, behavior, target_url)
 
     chrome_options = Options()
     base_dir = os.path.dirname(os.path.abspath(__file__))
     profile_dir = os.path.join(base_dir, f"chrome_sandbox_profile_{bot_id}")
 
-    # Comment this out on Windows/Mac if the binary path differs
-    # chrome_options.binary_location = "/usr/bin/google-chrome"
-
     if os.path.exists(profile_dir):
-        shutil.rmtree(profile_dir, ignore_errors=True)
+        try:
+            shutil.rmtree(profile_dir, ignore_errors=True)
+        except Exception:
+            pass
 
-    debug_port = 9300 + bot_id  # unique per process, avoids "port in use" crashes
+    debug_port = 9300 + bot_id
 
     chrome_options.add_argument(f"--user-data-dir={profile_dir}")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -142,10 +117,9 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 1] Bypassing waiting room...")
         driver.get(target_url)
 
-        # Must register/login before reaching confirm.html/payment.html -
-        # both are gated, and so is /evaluate itself. Doing this now
-        # (right after landing on the site) means the session cookie is
-        # already set by the time the bot gets there.
+        # FIX: Clear out stale localStorage/sessionStorage state from previous runs
+        driver.execute_script("localStorage.clear(); sessionStorage.clear();")
+
         register_throwaway_account(driver, bot_id)
 
         WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "enter-btn")))
@@ -191,9 +165,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 3] Seat selected.")
 
         if behavior == "tier2":
-            print(f"[Phase 3] Injecting Tier 2 behavior (bulk qty + timing pattern)...")
-            # Human-mimic gap + forced qty/pattern override to push into
-            # the Tier 2 evaluation boundary.
+            print(f"[Phase 3] Injecting Tier 2 behavior...")
             time.sleep(1.8)
             driver.execute_script("""
                 localStorage.setItem('selected_qty', '5');
@@ -206,13 +178,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
             print(f"[Phase 3] Behavior parameters injected.")
             time.sleep(0.5)
         elif behavior == "tier3":
-            print(f"[Phase 3] Injecting Tier 3 behavior (known-bad pattern + max qty + instant speed)...")
-            # Stack three independent +40 signals so the total score
-            # clears the 100-point Tier 3 cutoff on its own:
-            #   - pattern exactly matches a seeded bad pattern (+40)
-            #   - max quantity, 5 tickets (+40)
-            #   - instant quantity-select speed, <500ms (+40)
-            # No sleep before this - the whole point is "impossibly fast".
+            print(f"[Phase 3] Injecting Tier 3 behavior...")
             driver.execute_script("""
                 localStorage.setItem('selected_qty', '5');
                 localStorage.setItem('qty_select_speed', '150');
@@ -237,14 +203,11 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         driver.execute_script("validateAndCheckout();")
         print(f"[Phase 4] Submitted - awaiting server evaluation...")
 
-        # SECURITY INTERCEPT HANDLER
         try:
             WebDriverWait(driver, 8).until(EC.alert_is_present())
             alert = driver.switch_to.alert
-            alert_text = alert.text
-            print(f"[Phase 4] 🚨 Security alert intercepted: {alert_text}")
+            print(f"[Phase 4] 🚨 Security alert intercepted: {alert.text}")
             alert.accept()
-            # Handle a possible second stacked alert
             try:
                 WebDriverWait(driver, 2).until(EC.alert_is_present())
                 second = driver.switch_to.alert
@@ -255,7 +218,7 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         except TimeoutException:
             print(f"[Phase 4] No blocking dialog intercepted.")
 
-        # PHASE 5 - FINAL ROUTE, with a short poll instead of a blind sleep
+        # PHASE 5 - FINAL ROUTE
         print(f"[Phase 5] Waiting for final routing decision...")
         landing = driver.current_url
         for _ in range(15):
@@ -269,8 +232,6 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
             print(f"{tag} RESULT: TIER 3 (Ghost Ticket)")
         elif "captcha.html" in landing:
             print(f"{tag} RESULT: TIER 2 (CAPTCHA)")
-            # Bots can't solve the CAPTCHA — that's the point. Just record
-            # that it landed there and stop; don't sit here for 5 minutes.
         elif "payment.html" in landing:
             print(f"{tag} RESULT: TIER 1 / PASS")
         elif "success.html" in landing:

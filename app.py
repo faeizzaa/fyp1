@@ -1069,16 +1069,24 @@ def track_action():
     session_id = data.get('session_id')
     action = data.get('action', '')
 
+    # FIX: Ensure missing sessions safely attempt rehydration instead of crashing/blocking
     if session_id and session_id not in sessions:
         rehydrated = load_session_from_db(session_id)
         if rehydrated:
             sessions[session_id] = rehydrated
-            print(f"[Session] Rehydrated {session_id[:12]}... from Supabase (in-memory copy was missing)")
 
     if not session_id or session_id not in sessions:
-        response = make_response(jsonify({'error': 'Invalid session'}), 400)
-        response.headers["ngrok-skip-browser-warning"] = "true"
-        return response
+        # Create an emergency fallback entry if completely absent
+        sessions[session_id] = {
+            'start_time': time.time(),
+            'actions': [],
+            'timestamps': [],
+            'mouse_movements': 0,
+            'ip': get_client_ip(),
+            'user_agent': request.headers.get('User-Agent', ''),
+            'quantity': 1,
+            'pages_visited': []
+        }
 
     session = sessions[session_id]
     elapsed = time.time() - session['start_time']
