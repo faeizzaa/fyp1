@@ -32,9 +32,4 @@ if __name__ == "__main__":
 
     choice = sys.argv[1]
     behavior = BEHAVIOR_MAP[choice]
-    print("=" * 55)
-    print(f"Bot Runner - Tier {choice} Trigger ({behavior}) Initiated")
-    print(f"Target: {TARGET_URL}")
-    print("=" * 55)
-
     run_single_bot(TARGET_URL, WINDOW_POSITION, bot_id=int(choice), behavior=behavior)
