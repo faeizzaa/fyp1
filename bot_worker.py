@@ -117,7 +117,6 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 1] Bypassing waiting room...")
         driver.get(target_url)
 
-        # FIX: Clear out stale localStorage/sessionStorage state from previous runs
         driver.execute_script("localStorage.clear(); sessionStorage.clear();")
 
         register_throwaway_account(driver, bot_id)
@@ -191,48 +190,31 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 3] Proceeding to confirmation...")
         driver.execute_script("goNext();")
 
-        # PHASE 4 - CONFIRMATION
-        # PHASE 4 - CONFIRMATION / REDIRECTION GATE
-        print(f"[Phase 4] Awaiting navigation route...")
-        try:
-            # Wait for confirm.html OR a security interception page (ghost ticket / captcha)
-            WebDriverWait(driver, 10).until(
-                lambda d: any(p in d.current_url for p in ("confirm.html", "ghost_ticket.html", "captcha.html"))
-            )
-        except TimeoutException:
-            print(f"[Phase 4] Timed out waiting for final page. Current URL: {driver.current_url}")
-
-        # If it reached confirmation normally, fill the form. Otherwise, skip form filling and go to Phase 5.
-        if "confirm.html" in driver.current_url:
-            print(f"[Phase 4] Filling user information...")
-            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
-            driver.execute_script(f"""
-                document.getElementById('fullname').value = 'StressBot {bot_id}';
-                document.getElementById('email').value = 'bot{bot_id}@stress.test';
-            """)
-            print(f"[Phase 4] Form filled. Submitting checkout...")
-            driver.execute_script("validateAndCheckout();")
-        else:
-            print(f"[Phase 4] Intercepted early by security. Skipping form fill.")
-        try:
-            WebDriverWait(driver, 8).until(EC.alert_is_present())
-            alert = driver.switch_to.alert
-            print(f"[Phase 4] 🚨 Security alert intercepted: {alert.text}")
-            alert.accept()
+        # PHASE 4 - CONFIRMATION / SECURITY ROUTING
+        print(f"[Phase 4] Submitting checkout action...")
+        
+        if behavior == "tier3":
+            print(f"[Phase 4] Tier 3 expected block - checking response...")
             try:
-                WebDriverWait(driver, 2).until(EC.alert_is_present())
-                second = driver.switch_to.alert
-                print(f"[Phase 4] ⚠️  Second alert: {second.text}")
-                second.accept()
-            except TimeoutException:
+                driver.execute_script("if(typeof validateAndCheckout === 'function') { validateAndCheckout(); }")
+            except Exception:
                 pass
-        except TimeoutException:
-            print(f"[Phase 4] No blocking dialog intercepted.")
+            time.sleep(2)
+        else:
+            try:
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.ID, "fullname")))
+                driver.execute_script(f"""
+                    document.getElementById('fullname').value = 'StressBot {bot_id}';
+                    document.getElementById('email').value = 'bot{bot_id}@stress.test';
+                """)
+                driver.execute_script("validateAndCheckout();")
+            except TimeoutException:
+                print(f"[Phase 4] Form elements not found, checking direct redirect...")
 
-        # PHASE 5 - FINAL ROUTE
-        print(f"[Phase 5] Waiting for final routing decision...")
+        # PHASE 5 - FINAL ROUTE & LOGGING
+        print(f"[Phase 5] Awaiting final routing decision...")
         landing = driver.current_url
-        for _ in range(15):
+        for _ in range(10):
             landing = driver.current_url
             if any(p in landing for p in ("ghost_ticket.html", "captcha.html", "payment.html", "success.html")):
                 break
@@ -240,15 +222,13 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
 
         print(f"[Phase 5] Final route -> {landing}")
         if "ghost_ticket.html" in landing:
-            print(f"{tag} RESULT: TIER 3 (Ghost Ticket)")
+            print(f"{tag} RESULT: TIER 3 (Ghost Ticket triggered successfully!)")
         elif "captcha.html" in landing:
-            print(f"{tag} RESULT: TIER 2 (CAPTCHA)")
+            print(f"{tag} RESULT: TIER 2 (CAPTCHA triggered)")
         elif "payment.html" in landing:
             print(f"{tag} RESULT: TIER 1 / PASS")
-        elif "success.html" in landing:
-            print(f"{tag} RESULT: UNRESTRICTED SUCCESS")
         else:
-            print(f"{tag} RESULT: UNKNOWN -> {landing}")
+            print(f"{tag} RESULT: Routed to -> {landing}")
 
     except Exception:
         print(f"{tag} CRITICAL FAULT:")
