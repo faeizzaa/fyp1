@@ -192,17 +192,28 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         driver.execute_script("goNext();")
 
         # PHASE 4 - CONFIRMATION
-        WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
-        print(f"[Phase 4] Filling user information...")
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
-        driver.execute_script(f"""
-            document.getElementById('fullname').value = 'StressBot {bot_id}';
-            document.getElementById('email').value = 'bot{bot_id}@stress.test';
-        """)
-        print(f"[Phase 4] Form filled. Submitting checkout...")
-        driver.execute_script("validateAndCheckout();")
-        print(f"[Phase 4] Submitted - awaiting server evaluation...")
+        # PHASE 4 - CONFIRMATION / REDIRECTION GATE
+        print(f"[Phase 4] Awaiting navigation route...")
+        try:
+            # Wait for confirm.html OR a security interception page (ghost ticket / captcha)
+            WebDriverWait(driver, 10).until(
+                lambda d: any(p in d.current_url for p in ("confirm.html", "ghost_ticket.html", "captcha.html"))
+            )
+        except TimeoutException:
+            print(f"[Phase 4] Timed out waiting for final page. Current URL: {driver.current_url}")
 
+        # If it reached confirmation normally, fill the form. Otherwise, skip form filling and go to Phase 5.
+        if "confirm.html" in driver.current_url:
+            print(f"[Phase 4] Filling user information...")
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
+            driver.execute_script(f"""
+                document.getElementById('fullname').value = 'StressBot {bot_id}';
+                document.getElementById('email').value = 'bot{bot_id}@stress.test';
+            """)
+            print(f"[Phase 4] Form filled. Submitting checkout...")
+            driver.execute_script("validateAndCheckout();")
+        else:
+            print(f"[Phase 4] Intercepted early by security. Skipping form fill.")
         try:
             WebDriverWait(driver, 8).until(EC.alert_is_present())
             alert = driver.switch_to.alert
