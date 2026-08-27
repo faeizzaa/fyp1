@@ -75,7 +75,7 @@ def register_throwaway_account(driver, bot_id):
 
 
 def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
-    tag =[cite: 21] f"[Bot-{bot_id}:{behavior}]"
+    tag = f"[Bot-{bot_id}:{behavior}]"
     print_header(bot_id, behavior, target_url)
 
     chrome_options = Options()
