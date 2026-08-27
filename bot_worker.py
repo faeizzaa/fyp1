@@ -3,6 +3,7 @@ import os
 import shutil
 import platform
 import traceback
+import uuid
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -181,8 +182,41 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 3] Proceeding to confirmation...")
         driver.execute_script("goNext();")
 
+        # PHASE 3.5 - AUTH GATE CHECK
+        # confirm.html/payment.html are gated behind login in app.py.
+        # url_contains alone is unsafe here since "/login?next=confirm.html"
+        # also contains the substring "confirm.html" - check the path
+        # ending, not just a substring match.
+        print(f"[Phase 3.5] Checking for login gate...")
+        WebDriverWait(driver, 10).until(
+            lambda d: d.current_url.rstrip('/').endswith("confirm.html")
+            or "/login" in d.current_url
+        )
+
+        if "/login" in driver.current_url:
+            bot_username = f"stressbot_{bot_id}_{uuid.uuid4().hex[:6]}"
+            print(f"[Phase 3.5] Gated — registering throwaway account: {bot_username}")
+            driver.execute_script(f"""
+                fetch('/register', {{
+                    method: 'POST',
+                    headers: {{'Content-Type': 'application/json'}},
+                    body: JSON.stringify({{
+                        username: '{bot_username}',
+                        password: 'StressTest123',
+                        next: 'confirm.html'
+                    }})
+                }})
+                .then(res => res.json())
+                .then(data => {{ window.location.href = data.redirect || 'confirm.html'; }});
+            """)
+            WebDriverWait(driver, 10).until(
+                lambda d: d.current_url.rstrip('/').endswith("confirm.html")
+            )
+            print(f"[Phase 3.5] Account ready, reached confirm.html.")
+        else:
+            print(f"[Phase 3.5] Already authenticated, no gate hit.")
+
         # PHASE 4 - CONFIRMATION
-        WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
         print(f"[Phase 4] Filling user information...")
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
         driver.execute_script(f"""
