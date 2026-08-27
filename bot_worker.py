@@ -2,8 +2,9 @@ import time
 import os
 import shutil
 import platform
+import random
+import string
 import traceback
-import uuid
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -61,6 +62,42 @@ def print_header(bot_id, behavior, target_url):
     print(line)
     print()
 
+def register_throwaway_account(driver, bot_id):
+    """confirm.html/payment.html and /evaluate itself now require a
+    logged-in account. Registers via an in-browser fetch() (not the
+    `requests` library) so the resulting session cookie lands in the
+    same cookie jar Selenium's browser actually uses - a cookie set
+    outside the browser wouldn't be sent with the browser's own requests.
+    Must be called after driver.get() has already loaded a tickago.
+    onrender.com page, since fetch('/register') is same-origin relative.
+    """
+    suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+    username = f"bot{bot_id}_{suffix}"
+    password = "BotPass123!"
+
+    print(f"[Phase 0] Registering throwaway account '{username}'...")
+
+    register_script = """
+        const callback = arguments[arguments.length - 1];
+        fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify({username: arguments[0], password: arguments[1]})
+        })
+        .then(res => res.json().then(data => ({ok: res.ok, data})))
+        .then(result => callback(result))
+        .catch(err => callback({ok: false, data: {error: String(err)}}));
+    """
+    result = driver.execute_async_script(register_script, username, password)
+
+    if not result.get('ok'):
+        print(f"[Phase 0] Registration failed: {result.get('data')}")
+        return False
+
+    print(f"[Phase 0] Registered and logged in as '{username}'.")
+    return True
+
 
 def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
     tag = f"[Bot-{bot_id}:{behavior}]"
@@ -104,6 +141,12 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         # PHASE 1 - WAITING ROOM ENTRY
         print(f"[Phase 1] Bypassing waiting room...")
         driver.get(target_url)
+
+        # Must register/login before reaching confirm.html/payment.html -
+        # both are gated, and so is /evaluate itself. Doing this now
+        # (right after landing on the site) means the session cookie is
+        # already set by the time the bot gets there.
+        register_throwaway_account(driver, bot_id)
 
         WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "enter-btn")))
         driver.execute_script("""
@@ -182,41 +225,8 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 3] Proceeding to confirmation...")
         driver.execute_script("goNext();")
 
-        # PHASE 3.5 - AUTH GATE CHECK
-        # confirm.html/payment.html are gated behind login in app.py.
-        # url_contains alone is unsafe here since "/login?next=confirm.html"
-        # also contains the substring "confirm.html" - check the path
-        # ending, not just a substring match.
-        print(f"[Phase 3.5] Checking for login gate...")
-        WebDriverWait(driver, 10).until(
-            lambda d: d.current_url.rstrip('/').endswith("confirm.html")
-            or "/login" in d.current_url
-        )
-
-        if "/login" in driver.current_url:
-            bot_username = f"stressbot_{bot_id}_{uuid.uuid4().hex[:6]}"
-            print(f"[Phase 3.5] Gated — registering throwaway account: {bot_username}")
-            driver.execute_script(f"""
-                fetch('/register', {{
-                    method: 'POST',
-                    headers: {{'Content-Type': 'application/json'}},
-                    body: JSON.stringify({{
-                        username: '{bot_username}',
-                        password: 'StressTest123',
-                        next: 'confirm.html'
-                    }})
-                }})
-                .then(res => res.json())
-                .then(data => {{ window.location.href = data.redirect || 'confirm.html'; }});
-            """)
-            WebDriverWait(driver, 10).until(
-                lambda d: d.current_url.rstrip('/').endswith("confirm.html")
-            )
-            print(f"[Phase 3.5] Account ready, reached confirm.html.")
-        else:
-            print(f"[Phase 3.5] Already authenticated, no gate hit.")
-
         # PHASE 4 - CONFIRMATION
+        WebDriverWait(driver, 10).until(EC.url_contains("confirm.html"))
         print(f"[Phase 4] Filling user information...")
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fullname")))
         driver.execute_script(f"""
