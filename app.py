@@ -202,6 +202,11 @@ def login():
             return jsonify({'error': 'Invalid username or password'}), 401
 
         user = result.data[0]
+
+        if user.get('is_blocked'):
+            print(f"[Auth] Login rejected - blocked account: {username} (id={user['id']})")
+            return jsonify({'error': 'This account has been suspended.'}), 403
+
         session['user_id'] = user['id']
         session['username'] = user['username']
         print(f"[Auth] Login: {username} (id={user['id']})")
@@ -316,6 +321,25 @@ def count_tickets_sold_to_user(user_id):
         return result.count or 0
     except Exception as e:
         print(f"[DB] Failed to count tickets for user: {e}")
+        return 0
+
+def count_tier3_hits_by_ip(ip_address):
+    """Lifetime count of Tier-3 (ghost ticket) evaluations logged against
+    this IP. Used alongside the per-account ghost_ticket_count so a bot
+    that registers a fresh throwaway account each run (see
+    register_throwaway_account in bot_worker.py) still gets caught
+    reusing the same machine/script, not just the same account."""
+    if not supabase or not ip_address or ip_address == 'unknown':
+        return 0
+    try:
+        result = supabase.table("evaluation_logs") \
+            .select("id", count="exact") \
+            .eq("ip_address", ip_address) \
+            .eq("tier", 3) \
+            .execute()
+        return result.count or 0
+    except Exception as e:
+        print(f"[DB] Failed to count Tier-3 hits for IP: {e}")
         return 0
 
 def load_session_from_db(session_id):
@@ -953,13 +977,13 @@ def derive_action_label(log):
             return f"CAPTCHA failed (Level {level}) - escalated to Level {int(level) + 1}"
 
     if tier == 0:
-        return "Clean - proceeded to payment"
+        return "Clean"
     elif tier == 1:
-        return "3s delay applied - proceeded to payment"
+        return "3s delay applied"
     elif tier == 2:
         return "CAPTCHA challenge triggered"
     elif tier == 3:
-        return "Ghost ticket issued (fake success, no real seat)"
+        return "Ghost ticket issued"
     return "-"
 
 def dedupe_logs_by_session(logs):
@@ -1255,7 +1279,13 @@ def evaluate_session():
         if tier == 3 and session_id in sessions:
             del sessions[session_id]
 
-        response = make_response(jsonify({'score': score, 'tier': tier, 'reasons': reasons}))
+        response = make_response(jsonify({
+            'score': score,
+            'tier': tier,
+            'reasons': reasons,
+            'action': 'ghost' if tier == 3 else 'none',
+            'redirect': 'ghost_ticket.html' if tier == 3 else None
+        }))
         response.headers["ngrok-skip-browser-warning"] = "true"
         return response
 
@@ -1353,7 +1383,7 @@ def evaluate_session():
 
     if score >= 100:
         tier = 3
-        print("TIER 3: Redirecting to ghost ticket")
+        print("TIER 3: Evaluating ghost-ticket vs hard-block escalation")
         if pattern and not bot_tree.search(pattern):
             bot_tree.insert(pattern)
             if pattern not in learned_patterns:
@@ -1391,6 +1421,66 @@ def evaluate_session():
     print(f"   Reasons     : {reasons}")
     print("=" * 60 + "\n")
 
+    # ------------------------------------------------------------
+    # TIER 3 ESCALATION: first offense stays deceptive (ghost ticket),
+    # a REPEAT offense - by the same account OR the same IP - gets
+    # hard-blocked instead. This is deliberately keyed off two
+    # independent signals rather than just one:
+    #   - account (ghost_ticket_count / is_blocked): strongest signal
+    #     now that checkout requires login, but a bot that registers a
+    #     fresh throwaway account each run would otherwise look like a
+    #     first-time offender every single time.
+    #   - IP (count_tier3_hits_by_ip): catches that "fresh account
+    #     every run" case, since the underlying script/machine is
+    #     still the same even when the account isn't.
+    # A single IP match isn't enough to block on its own (shared NAT /
+    # mobile carriers mean multiple real people can share an IP), so it
+    # requires >=2 prior IP hits, while a single prior account offense
+    # is enough (an account, unlike an IP, isn't shared by strangers).
+    # ------------------------------------------------------------
+    action = "none"
+    redirect_page = None
+
+    if tier == 3:
+        current_user = current_user or get_current_user()
+        prior_ghosts = 0
+        already_blocked = False
+
+        if current_user:
+            prior_ghosts = current_user.get('ghost_ticket_count') or 0
+            already_blocked = bool(current_user.get('is_blocked'))
+
+        ip_tier3_hits = count_tier3_hits_by_ip(ip_address)
+
+        is_repeat_offender = already_blocked or prior_ghosts >= 1 or ip_tier3_hits >= 2
+
+        if is_repeat_offender:
+            action = "blocked"
+            redirect_page = "error.html"
+            reasons.append("Repeat offender - account or IP previously triggered Tier 3")
+            print(f"TIER 3 ESCALATION: BLOCKING (prior_ghosts={prior_ghosts}, ip_hits={ip_tier3_hits}, already_blocked={already_blocked})")
+
+            if supabase and current_user:
+                try:
+                    supabase.table("users").update({"is_blocked": True}).eq("id", current_user['id']).execute()
+                except Exception as e:
+                    print(f"[DB] Failed to flag account as blocked: {e}")
+
+            session.clear()  # force re-login (or rather, re-registration, since this account is now dead)
+        else:
+            action = "ghost"
+            redirect_page = "ghost_ticket.html"
+            print(f"TIER 3 ESCALATION: GHOST TICKET (first offense - prior_ghosts={prior_ghosts}, ip_hits={ip_tier3_hits})")
+
+            if supabase and current_user:
+                try:
+                    supabase.table("users").update({
+                        "ghost_ticket_count": prior_ghosts + 1,
+                        "last_ghost_ticket_at": now_myt_iso()
+                    }).eq("id", current_user['id']).execute()
+                except Exception as e:
+                    print(f"[DB] Failed to update ghost_ticket_count: {e}")
+
     log_entry = {
         'time':            datetime.now().strftime('%H:%M:%S'),
         'session_id':      session_id,
@@ -1415,7 +1505,9 @@ def evaluate_session():
         'total_score': total_score,
         'tier': tier,
         'reasons': reasons,
-        'carry_forward': carry_forward
+        'carry_forward': carry_forward,
+        'action': action,
+        'redirect': redirect_page
     }))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response

@@ -45,7 +45,36 @@ def print_header(bot_id, behavior, target_url):
     print(line)
     print()
 
-def register_throwaway_account(driver, bot_id):
+def register_throwaway_account(driver, bot_id, fixed_credentials=None):
+    """Registers a new account by default. If fixed_credentials=(username,
+    password) is passed, tries /login with those creds instead - used by
+    run_repeat_offender_test() so the SAME account can attempt Tier 3
+    twice, to verify the 2nd attempt gets hard-blocked instead of
+    ghost-ticketed again."""
+    if fixed_credentials:
+        username, password = fixed_credentials
+        print(f"[Phase 0] Logging in as existing account '{username}'...")
+        login_script = """
+            const callback = arguments[arguments.length - 1];
+            fetch('/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
+                body: JSON.stringify({username: arguments[0], password: arguments[1]})
+            })
+            .then(res => res.json().then(data => ({ok: res.ok, status: res.status, data})))
+            .then(result => callback(result))
+            .catch(err => callback({ok: false, data: {error: String(err)}}));
+        """
+        result = driver.execute_async_script(login_script, username, password)
+
+        if not result.get('ok'):
+            print(f"[Phase 0] Login failed ({result.get('status')}): {result.get('data')}")
+            return False
+
+        print(f"[Phase 0] Logged in as '{username}'.")
+        return True
+
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
     username = f"bot{bot_id}_{suffix}"
     password = "BotPass123!"
@@ -71,7 +100,7 @@ def register_throwaway_account(driver, bot_id):
         return False
 
     print(f"[Phase 0] Registered and logged in as '{username}'.")
-    return True
+    return (username, password)
 
 
 def select_seats(driver, count, delay_between=0.3):
@@ -107,7 +136,7 @@ def select_seats(driver, count, delay_between=0.3):
         time.sleep(delay_between)
     return clicked_sids
 
-def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
+def run_single_bot(target_url, screen_position, bot_id, behavior="tier1", fixed_credentials=None):
     tag = f"[Bot-{bot_id}:{behavior}]"
     print_header(bot_id, behavior, target_url)
 
@@ -139,11 +168,14 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         )
     except Exception as init_err:
         print(f"❌ {tag} Driver Crash: {init_err}")
-        return
+        return None
 
     x_pos, y_pos, width, height = screen_position
     driver.set_window_position(x_pos, y_pos)
     driver.set_window_size(width, height)
+
+    account_used = fixed_credentials
+    landing = None
 
     try:
         # PHASE 1 - WAITING ROOM ENTRY
@@ -152,7 +184,9 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
 
         driver.execute_script("localStorage.clear(); sessionStorage.clear();")
 
-        register_throwaway_account(driver, bot_id)
+        auth_result = register_throwaway_account(driver, bot_id, fixed_credentials=fixed_credentials)
+        if not fixed_credentials and isinstance(auth_result, tuple):
+            account_used = auth_result
 
         WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.ID, "enter-btn")))
         driver.execute_script("""
@@ -275,6 +309,8 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"[Phase 5] Final route -> {landing}")
         if "ghost_ticket.html" in landing:
             print(f"{tag} RESULT: TIER 3 (Ghost Ticket triggered successfully!)")
+        elif "error.html" in landing:
+            print(f"{tag} RESULT: TIER 3 (Hard Blocked — repeat offender!)")
         elif "captcha.html" in landing:
             print(f"{tag} RESULT: TIER 2 (CAPTCHA triggered)")
         elif "payment.html" in landing:
@@ -289,3 +325,42 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1"):
         print(f"{tag} Pipeline complete, closing driver.")
         time.sleep(2)
         driver.quit()
+
+    return {"landing": landing, "account": account_used}
+
+
+def run_repeat_offender_test(target_url, screen_position, bot_id):
+    """Runs Tier 3 behavior twice with the SAME account to verify the
+    escalation logic: 1st attempt should land on ghost_ticket.html,
+    2nd attempt (same account) should land on error.html (hard block)."""
+    tag = f"[Bot-{bot_id}:repeat-offender]"
+
+    print(f"{tag} === ATTEMPT 1 (expect: ghost ticket) ===")
+    result1 = run_single_bot(target_url, screen_position, bot_id, behavior="tier3")
+
+    if not result1 or not result1.get("account"):
+        print(f"{tag} Attempt 1 failed before an account was established - aborting test.")
+        return
+
+    username, password = result1["account"]
+    print(f"{tag} Attempt 1 landed on: {result1['landing']}")
+    print(f"{tag} Using account '{username}' again for attempt 2...")
+
+    print(f"{tag} Waiting before second attempt...")
+    time.sleep(3)
+
+    print(f"{tag} === ATTEMPT 2, SAME ACCOUNT (expect: hard block) ===")
+    result2 = run_single_bot(
+        target_url, screen_position, bot_id, behavior="tier3",
+        fixed_credentials=(username, password)
+    )
+
+    print(f"\n{tag} " + "=" * 50)
+    print(f"{tag} REPEAT-OFFENDER TEST SUMMARY")
+    print(f"{tag}   Attempt 1 -> {result1['landing']}")
+    print(f"{tag}   Attempt 2 -> {result2['landing'] if result2 else 'FAILED'}")
+    if result2 and "error.html" in result2["landing"]:
+        print(f"{tag}   RESULT: PASS - escalation correctly hard-blocked the repeat offender.")
+    else:
+        print(f"{tag}   RESULT: FAIL - 2nd attempt did not get hard-blocked as expected.")
+    print(f"{tag} " + "=" * 50)

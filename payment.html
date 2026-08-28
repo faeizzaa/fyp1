@@ -246,8 +246,12 @@
 
             if (data.tier === 3) {
 
-                alert("Tier 3 Active: Suspicious activity detected.");
-                window.location.href = 'ghost_ticket.html';
+                if (data.action === 'blocked') {
+                    alert("Account Suspended: This account has been flagged for repeated suspicious activity.");
+                } else {
+                    alert("Tier 3 Active: Suspicious activity detected.");
+                }
+                window.location.href = data.redirect || 'ghost_ticket.html';
 
             } else if (data.tier === 2 && localStorage.getItem('captcha_passed') !== 'true') {
 

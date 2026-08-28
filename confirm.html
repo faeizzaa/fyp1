@@ -239,12 +239,17 @@
 
         case 3:
 
-            alert(
-                "Tier 3 Detection\nGhost ticket activated."
-            );
+            if (data.action === 'blocked') {
+                alert(
+                    "Account Suspended\nThis account has been flagged for repeated suspicious activity."
+                );
+            } else {
+                alert(
+                    "Tier 3 Detection\nGhost ticket activated."
+                );
+            }
 
-            window.location.href =
-                "ghost_ticket.html";
+            window.location.href = data.redirect || "ghost_ticket.html";
 
             break;
 

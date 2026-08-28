@@ -1,18 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Order Processing Registry</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Under Review - Tickago</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .hold-icon {
+            width: 72px;
+            height: 72px;
+            background: #fff7e6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 32px;
+        }
+
+        .hold-panel {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 8px;
+            padding: 18px 20px;
+            margin: 22px 0;
+            text-align: left;
+        }
+
+        .hold-panel-label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #92610a;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .hold-ref {
+            font-family: 'Courier New', Courier, monospace;
+            color: #92610a;
+            font-size: 0.9rem;
+        }
+
+        .hold-note {
+            color: #64748b;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            margin-top: 18px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container" style="border: 2px solid #dc3545;">
-        <h1 style="color: #dc3545;">🚨 Transaction Queue Hold</h1>
-        <p>Your ticket allocation check has completed sequence synchronization successfully.</p>
-        <div style="background: #fff5f5; color: #a1222e; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #faccd1; font-weight: bold;">
-            Queue Reference State Vector Token: ERR_ISOLATION_ZONE_303
+<nav style="background:#0f1115;padding:0 32px;height:62px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);"><div style="width:34px;height:34px;background:#6c5ce7;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;">T</div><span style="color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:-0.3px;">Ticka<span style="color:#a29bfe">go</span></span></nav>
+
+    <div class="container" style="max-width: 520px; padding-top: 48px; padding-bottom: 48px;">
+
+        <div class="hold-icon">⏳</div>
+
+        <h1 style="font-size: 1.6rem; margin-bottom: 8px;">Your order is being reviewed</h1>
+        <p style="color: #64748b; margin: 0;">
+            We're double-checking a few details before confirming your seats. This won't take long.
+        </p>
+
+        <div class="hold-panel">
+            <div class="hold-panel-label">Reference Number</div>
+            <div class="hold-ref">TKG-303-REVIEW</div>
         </div>
-        <p>Allocated seats are flagged for inventory manual clearing desk authorization review. No settlement request profile charges have been committed.</p>
-        <button class="btn btn-secondary" onclick="localStorage.clear(); window.location.href='home.html'">Return to Terminal Registry</button>
+
+        <p style="color: #334155; font-size: 0.95rem; line-height: 1.6;">
+            Your seats are being held for you while this review is in progress. <strong>You have not been
+            charged</strong> — no payment has been taken from your card.
+        </p>
+
+        <p class="hold-note">
+            If you believe this is a mistake, you can return home and try again. If the issue continues,
+            please contact our support team with the reference number above.
+        </p>
+
+        <div style="margin-top: 28px;">
+            <button class="btn btn-primary" style="width: 100%;"
+                    onclick="localStorage.clear(); window.location.href='home.html'">
+                Return to Home
+            </button>
+        </div>
     </div>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import sys
 import multiprocessing
-from bot_worker import run_single_bot
+from bot_worker import run_single_bot, run_repeat_offender_test
 
 # ==========================================================
 # 🚀 BOT RUNNER
@@ -54,16 +54,20 @@ def run_all():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2 or (sys.argv[1] not in BEHAVIOR_MAP and sys.argv[1] != "all"):
-        print("Usage: python3 bot_runner.py [1|2|3|all]")
-        print("  1   -> Tier 1 trigger (fast, no mouse movement)")
-        print("  2   -> Tier 2 trigger (bulk qty, instant selection)")
-        print("  3   -> Tier 3 trigger (known-bad pattern + max qty + instant speed)")
-        print("  all -> run bot1/bot2/bot3 simultaneously, one per tier")
+    if len(sys.argv) < 2 or (sys.argv[1] not in BEHAVIOR_MAP and sys.argv[1] not in ("all", "repeat")):
+        print("Usage: python3 bot_runner.py [1|2|3|all|repeat]")
+        print("  1      -> Tier 1 trigger (fast, no mouse movement)")
+        print("  2      -> Tier 2 trigger (bulk qty, instant selection)")
+        print("  3      -> Tier 3 trigger (known-bad pattern + max qty + instant speed)")
+        print("  all    -> run bot1/bot2/bot3 simultaneously, one per tier")
+        print("  repeat -> same account attempts Tier 3 twice: expect ghost ticket,")
+        print("            then a hard block on the 2nd attempt")
         sys.exit(1)
 
     if sys.argv[1] == "all":
         run_all()
+    elif sys.argv[1] == "repeat":
+        run_repeat_offender_test(TARGET_URL, window_position(1), bot_id=1)
     else:
         choice = sys.argv[1]
         behavior = BEHAVIOR_MAP[choice]
