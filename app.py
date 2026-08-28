@@ -243,7 +243,8 @@ def save_evaluation_to_db(log):
             "score":           log["score"],
             "tier":            log["tier"],
             "reasons":         ", ".join(log["reasons"]) if isinstance(log["reasons"], list) else log["reasons"],
-            "ip_address":      log.get("ip", "unknown")
+            "ip_address":      log.get("ip", "unknown"),
+            "action":          log.get("action", "none")
         }).execute()
         print(f"[DB] Evaluation log saved to Supabase.")
     except Exception as e:
@@ -403,7 +404,8 @@ def load_logs_from_db():
                 "score":           row.get("score", 0),
                 "tier":            row.get("tier", 0),
                 "reasons":         row.get("reasons", "").split(", ") if row.get("reasons") else [],
-                "ip":              row.get("ip_address", "unknown")
+                "ip":              row.get("ip_address", "unknown"),
+                "action":          row.get("action")
             })
         return logs
     except Exception as e:
@@ -983,7 +985,16 @@ def derive_action_label(log):
     elif tier == 2:
         return "CAPTCHA challenge triggered"
     elif tier == 3:
-        return "Ghost ticket issued"
+        action = log.get('action')
+        if action == 'blocked':
+            return "Account blocked (repeat offender)"
+        elif action == 'ghost':
+            return "Ghost ticket issued"
+        else:
+            # Older rows saved before the 'action' column existed - fall
+            # back to the previous (always-correct-for-first-offense)
+            # assumption rather than showing a blank/unknown label.
+            return "Ghost ticket issued"
     return "-"
 
 def dedupe_logs_by_session(logs):
@@ -1270,7 +1281,8 @@ def evaluate_session():
             'score':           score,
             'tier':            tier,
             'reasons':         reasons,
-            'ip':              ip_address
+            'ip':              ip_address,
+            'action':          'ghost' if tier == 3 else 'none'
         }
         evaluation_logs.append(log_entry)
         save_logs()
@@ -1491,7 +1503,8 @@ def evaluate_session():
         'score':           score,
         'tier':            tier,
         'reasons':         reasons,
-        'ip':              ip_address
+        'ip':              ip_address,
+        'action':          action
     }
     evaluation_logs.append(log_entry)
     save_logs()
