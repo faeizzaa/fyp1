@@ -45,35 +45,65 @@ def print_header(bot_id, behavior, target_url):
     print(line)
     print()
 
+def login_or_register(driver, username, password):
+    """Tries to register this account; if it already exists (e.g. this
+    script has been run before with the same fixed credentials), falls
+    back to logging in instead. This is what lets a bot script be
+    re-run repeatedly with a FIXED account - the first run registers
+    it, every run after that logs in - which is exactly what's needed
+    to manually test repeat-offender blocking across separate
+    invocations, not just within a single automated run."""
+    print(f"[Phase 0] Attempting to register '{username}'...")
+    register_script = """
+        const callback = arguments[arguments.length - 1];
+        fetch('/register', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify({username: arguments[0], password: arguments[1]})
+        })
+        .then(res => res.json().then(data => ({ok: res.ok, status: res.status, data})))
+        .then(result => callback(result))
+        .catch(err => callback({ok: false, data: {error: String(err)}}));
+    """
+    result = driver.execute_async_script(register_script, username, password)
+
+    if result.get('ok'):
+        print(f"[Phase 0] Registered and logged in as '{username}' (first time seeing this account).")
+        return True
+
+    print(f"[Phase 0] Registration failed ({result.get('status')}: {result.get('data', {}).get('error', 'unknown')}) - trying login instead...")
+
+    login_script = """
+        const callback = arguments[arguments.length - 1];
+        fetch('/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify({username: arguments[0], password: arguments[1]})
+        })
+        .then(res => res.json().then(data => ({ok: res.ok, status: res.status, data})))
+        .then(result => callback(result))
+        .catch(err => callback({ok: false, data: {error: String(err)}}));
+    """
+    login_result = driver.execute_async_script(login_script, username, password)
+
+    if not login_result.get('ok'):
+        print(f"[Phase 0] Login also failed ({login_result.get('status')}): {login_result.get('data')}")
+        return False
+
+    print(f"[Phase 0] Logged in as existing account '{username}'.")
+    return True
+
 def register_throwaway_account(driver, bot_id, fixed_credentials=None):
-    """Registers a new account by default. If fixed_credentials=(username,
-    password) is passed, tries /login with those creds instead - used by
-    run_repeat_offender_test() so the SAME account can attempt Tier 3
-    twice, to verify the 2nd attempt gets hard-blocked instead of
-    ghost-ticketed again."""
+    """Registers a new random account by default. If fixed_credentials=
+    (username, password) is passed, uses login_or_register() instead so
+    the SAME account can be reused across runs - either within one
+    script (run_repeat_offender_test) or across separate manual
+    invocations (bot1.py/bot2.py/bot3.py/bot4.py)."""
     if fixed_credentials:
         username, password = fixed_credentials
-        print(f"[Phase 0] Logging in as existing account '{username}'...")
-        login_script = """
-            const callback = arguments[arguments.length - 1];
-            fetch('/login', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({username: arguments[0], password: arguments[1]})
-            })
-            .then(res => res.json().then(data => ({ok: res.ok, status: res.status, data})))
-            .then(result => callback(result))
-            .catch(err => callback({ok: false, data: {error: String(err)}}));
-        """
-        result = driver.execute_async_script(login_script, username, password)
-
-        if not result.get('ok'):
-            print(f"[Phase 0] Login failed ({result.get('status')}): {result.get('data')}")
-            return False
-
-        print(f"[Phase 0] Logged in as '{username}'.")
-        return True
+        return login_or_register(driver, username, password)
 
     suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
     username = f"bot{bot_id}_{suffix}"

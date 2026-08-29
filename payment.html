@@ -246,11 +246,13 @@
 
             if (data.tier === 3) {
 
-                if (data.action === 'blocked') {
-                    alert("Account Suspended: This account has been flagged for repeated suspicious activity.");
+                if (data.redirect === "error.html") {
+                    alert("Access Denied: This account has been blocked for repeated suspicious activity.");
                 } else {
                     alert("Tier 3 Active: Suspicious activity detected.");
                 }
+                // Trust the server's redirect field - a repeat offender
+                // gets a real block, not another ghost ticket.
                 window.location.href = data.redirect || 'ghost_ticket.html';
 
             } else if (data.tier === 2 && localStorage.getItem('captcha_passed') !== 'true') {

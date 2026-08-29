@@ -239,9 +239,9 @@
 
         case 3:
 
-            if (data.action === 'blocked') {
+            if (data.redirect === "error.html") {
                 alert(
-                    "Account Suspended\nThis account has been flagged for repeated suspicious activity."
+                    "Access Denied\nThis account has been blocked for repeated suspicious activity."
                 );
             } else {
                 alert(
@@ -249,6 +249,9 @@
                 );
             }
 
+            // Trust the server's redirect field (it knows whether this
+            // is a first offense or a repeat one) - fall back to
+            // ghost_ticket.html only if the field is somehow missing.
             window.location.href = data.redirect || "ghost_ticket.html";
 
             break;
