@@ -1413,6 +1413,43 @@ def evaluate_session():
     force_tier = data.get('force_tier')
     ip_address = get_client_ip()
 
+    # Unconditional block check - MUST run before any scoring, not
+    # nested inside the Tier 3 escalation logic further down. That
+    # placement meant a blocked account behaving completely normally on
+    # a later attempt (not independently scoring as suspicious THIS
+    # time) sailed straight through undetected, since the is_blocked
+    # check never even ran unless the current request also happened to
+    # score as Tier 3 on its own. Being blocked means blocked, full
+    # stop - not "blocked again only if you also act suspiciously again."
+    blocked_user = get_current_user()
+    if blocked_user and blocked_user.get('is_blocked'):
+        print(f"\n[BLOCKED ACCOUNT] user_id={blocked_user['id']} ({blocked_user.get('username')}) attempted /evaluate - hard blocking regardless of current behavior")
+        log_entry = {
+            'time':            datetime.now().strftime('%H:%M:%S'),
+            'session_id':      session_id or 'unknown',
+            'pattern':         data.get('pattern', 'N/A'),
+            'duration':        data.get('duration', 0),
+            'quantity':        data.get('quantity', 1),
+            'mouse_movements': data.get('mouse_movements', 0),
+            'score':           100,
+            'tier':            3,
+            'reasons':         ["Blocked account attempted checkout"],
+            'ip':              ip_address,
+            'action':          'blocked'
+        }
+        evaluation_logs.append(log_entry)
+        save_logs()
+        save_evaluation_to_db(log_entry)
+
+        response = make_response(jsonify({
+            'score': 100,
+            'tier': 3,
+            'reasons': ["Blocked account attempted checkout"],
+            'redirect': 'error.html'
+        }))
+        response.headers["ngrok-skip-browser-warning"] = "true"
+        return response
+
     # Detection scoring always trusts the client-supplied telemetry below -
     # this is a deliberate choice, not an oversight (see FYP write-up:
     # server-authoritative tracking was considered but would require every
