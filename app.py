@@ -705,215 +705,401 @@ DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Bot Detection Monitor</title>
+    <meta charset="UTF-8">
+    <title>Tickago // Threat Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #1a1a2e;
-            color: #eee;
-            padding: 20px;
+
+        :root {
+            --bg: #070a12;
+            --bg-grid: rgba(0, 240, 255, 0.035);
+            --card: rgba(19, 27, 46, 0.65);
+            --card-border: rgba(0, 240, 255, 0.14);
+            --cyan: #00f0ff;
+            --purple: #a78bfa;
+            --green: #12f7a0;
+            --yellow: #ffd60a;
+            --orange: #ff9f1c;
+            --red: #ff3860;
+            --text: #e6ecf7;
+            --muted: #7c88a8;
         }
-        h1 { color: #00d4ff; margin-bottom: 10px; }
-        .subtitle { color: #888; margin-bottom: 30px; }
+
+        body {
+            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(ellipse at top left, rgba(0,240,255,0.06), transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(167,139,250,0.06), transparent 50%),
+                var(--bg);
+            background-attachment: fixed;
+            color: var(--text);
+            padding: 28px 32px 60px;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--bg-grid) 1px, transparent 1px),
+                linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+            background-size: 42px 42px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body > * { position: relative; z-index: 1; }
+
+        .header-row {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--green);
+            border: 1px solid rgba(18, 247, 160, 0.35);
+            background: rgba(18, 247, 160, 0.08);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px var(--green);
+            animation: pulse-dot 1.4s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.75); }
+        }
+
+        .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.92rem; }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, var(--cyan), #0090aa);
+            color: #04141a;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            font-family: 'Space Grotesk', sans-serif;
+            box-shadow: 0 0 18px rgba(0, 240, 255, 0.25);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 0 26px rgba(0, 240, 255, 0.4); }
+
+        .auto-refresh { color: var(--muted); font-size: 0.82rem; margin-left: 14px; font-family: 'JetBrains Mono', monospace; }
+
+        .spike-alert {
+            background: linear-gradient(135deg, rgba(255,56,96,0.14), rgba(255,56,96,0.04));
+            border: 1px solid rgba(255,56,96,0.5);
+            border-radius: 14px;
+            padding: 16px 22px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 0 30px rgba(255,56,96,0.15);
+            animation: pulse-border 1.6s ease-in-out infinite;
+        }
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(255,56,96,0.5); }
+            50% { border-color: rgba(255,56,96,0.9); }
+        }
+        .spike-alert-icon { font-size: 1.6rem; }
+        .spike-alert-text strong { color: var(--red); font-size: 1.02rem; display: block; margin-bottom: 2px; }
+        .spike-alert-text span { color: var(--muted); font-size: 0.85rem; }
+
+        .spike-baseline {
+            color: var(--muted);
+            font-size: 0.82rem;
+            margin: 18px 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
+            gap: 18px;
             margin-bottom: 30px;
         }
+
         .stat-card {
-            background: #16213e;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #0f3460;
-        }
-        .stat-value { font-size: 2.5rem; font-weight: bold; color: #00d4ff; }
-        .stat-label { color: #888; font-size: 0.9rem; margin-top: 5px; }
-        .stat-card.tier1 .stat-value { color: #ffc107; }
-        .stat-card.tier2 .stat-value { color: #ff9800; }
-        .stat-card.tier3 .stat-value { color: #f44336; }
-        .stat-card.clean .stat-value { color: #4caf50; }
-        .section-title {
-            color: #00d4ff;
-            margin: 30px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #0f3460;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .db-badge {
-            font-size: 12px;
-            background: #27ae60;
-            color: white;
-            padding: 3px 10px;
-            border-radius: 20px;
-        }
-        .db-badge.offline { background: #e74c3c; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #16213e;
-            border-radius: 12px;
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            padding: 22px 20px;
+            border: 1px solid var(--card-border);
+            position: relative;
             overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #0f3460;
+        .stat-card:hover { transform: translateY(-3px); }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -40%; right: -20%;
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            filter: blur(30px);
+            opacity: 0.5;
         }
-        th { background: #0f3460; color: #00d4ff; font-weight: 600; }
-        tr:hover { background: #1f2b4d; }
-        .tier-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.85rem;
-        }
-        .tier-0 { background: #4caf50; color: white; }
-        .tier-1 { background: #ffc107; color: black; }
-        .tier-2 { background: #ff9800; color: white; }
-        .tier-3 { background: #f44336; color: white; }
-        .pattern-code {
-            font-family: 'Courier New', monospace;
-            background: #0f3460;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-        .refresh-btn {
-            background: #00d4ff;
-            color: #1a1a2e;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .refresh-btn:hover { background: #00b8e6; }
-        .auto-refresh { color: #888; font-size: 0.85rem; margin-left: 15px; }
-        .empty-state { text-align: center; padding: 40px; color: #666; }
-        .active-sessions {
-            background: #16213e;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .session-item {
+        .stat-card .stat-icon { font-size: 1.3rem; margin-bottom: 8px; opacity: 0.85; }
+        .stat-value { font-size: 2.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .stat-label { color: var(--muted); font-size: 0.82rem; margin-top: 4px; letter-spacing: 0.3px; }
+
+        .stat-card.clean { border-color: rgba(18,247,160,0.3); }
+        .stat-card.clean .stat-value { color: var(--green); }
+        .stat-card.clean::after { background: var(--green); }
+        .stat-card.clean:hover { box-shadow: 0 0 26px rgba(18,247,160,0.18); }
+
+        .stat-card.tier1 { border-color: rgba(255,214,10,0.3); }
+        .stat-card.tier1 .stat-value { color: var(--yellow); }
+        .stat-card.tier1::after { background: var(--yellow); }
+        .stat-card.tier1:hover { box-shadow: 0 0 26px rgba(255,214,10,0.18); }
+
+        .stat-card.tier2 { border-color: rgba(255,159,28,0.3); }
+        .stat-card.tier2 .stat-value { color: var(--orange); }
+        .stat-card.tier2::after { background: var(--orange); }
+        .stat-card.tier2:hover { box-shadow: 0 0 26px rgba(255,159,28,0.18); }
+
+        .stat-card.tier3 { border-color: rgba(255,56,96,0.3); }
+        .stat-card.tier3 .stat-value { color: var(--red); }
+        .stat-card.tier3::after { background: var(--red); }
+        .stat-card.tier3:hover { box-shadow: 0 0 26px rgba(255,56,96,0.18); }
+
+        .section-title {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 10px;
-            border-bottom: 1px solid #0f3460;
-            flex-wrap: wrap;
-            gap: 8px;
+            justify-content: space-between;
+            gap: 12px;
+            margin: 34px 0 14px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--text);
         }
-        .session-item:last-child { border-bottom: none; }
-        .session-id { font-family: monospace; color: #00d4ff; }
-        .session-actions { font-family: monospace; color: #ffc107; }
-        .ip-badge {
-            background: #0f3460;
+        .section-title .title-left { display: flex; align-items: center; gap: 10px; }
+        .section-title .accent-bar {
+            width: 4px; height: 20px;
+            background: linear-gradient(180deg, var(--cyan), var(--purple));
+            border-radius: 2px;
+        }
+
+        .db-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(18,247,160,0.1);
+            color: var(--green);
+            border: 1px solid rgba(18,247,160,0.35);
+            padding: 4px 11px;
+            border-radius: 20px;
+        }
+        .db-badge.offline { background: rgba(255,56,96,0.1); color: var(--red); border-color: rgba(255,56,96,0.35); }
+
+        .sessions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 12px;
+        }
+        .session-card {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: border-color 0.2s;
+        }
+        .session-card:hover { border-color: rgba(0,240,255,0.4); }
+        .session-id { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 0.85rem; font-weight: 600; }
+        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 0.78rem; color: var(--muted); }
+        .session-meta .ip-badge {
+            background: rgba(255,255,255,0.05);
             padding: 2px 8px;
             border-radius: 4px;
-            font-size: 12px;
-            font-family: monospace;
-            color: #aaa;
+            font-family: 'JetBrains Mono', monospace;
+            color: #b8c2d9;
         }
-        .spike-alert {
-            background: #3d1414;
-            border: 1px solid #f44336;
+        .session-meta .pattern-mini { color: var(--yellow); font-family: 'JetBrains Mono', monospace; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+            background: var(--card);
+            border: 1px dashed var(--card-border);
             border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            animation: pulse-border 1.5s ease-in-out infinite;
         }
-        @keyframes pulse-border {
-            0%, 100% { border-color: #f44336; }
-            50% { border-color: #ff8a80; }
+
+        .table-wrap {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            border-radius: 14px;
+            border: 1px solid var(--card-border);
+            overflow: hidden;
         }
-        .spike-alert-text strong { color: #ff8a80; font-size: 1.05rem; }
-        .spike-alert-text span { color: #ccc; font-size: 0.85rem; }
-        .spike-baseline {
-            color: #666;
-            font-size: 0.85rem;
-            margin-bottom: 20px;
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; }
+        th {
+            background: rgba(0,240,255,0.06);
+            color: var(--cyan);
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            border-bottom: 1px solid var(--card-border);
         }
+        td { border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr { transition: background 0.15s; }
+        tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+        tbody tr:hover { background: rgba(0,240,255,0.05); }
+
+        .pattern-code {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255,255,255,0.06);
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.82rem;
+            color: #d4dcf0;
+        }
+
+        .tier-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .tier-0 { background: rgba(18,247,160,0.15); color: var(--green); box-shadow: 0 0 10px rgba(18,247,160,0.15) inset; }
+        .tier-1 { background: rgba(255,214,10,0.15); color: var(--yellow); box-shadow: 0 0 10px rgba(255,214,10,0.15) inset; }
+        .tier-2 { background: rgba(255,159,28,0.15); color: var(--orange); box-shadow: 0 0 10px rgba(255,159,28,0.15) inset; }
+        .tier-3 { background: rgba(255,56,96,0.18); color: var(--red); box-shadow: 0 0 10px rgba(255,56,96,0.2) inset; }
+
+        .ip-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--muted); }
+        .action-cell { font-size: 0.78rem; color: var(--purple); font-family: 'JetBrains Mono', monospace; }
+        .reasons-cell { font-size: 0.78rem; color: var(--muted); max-width: 260px; }
     </style>
 </head>
 <body>
-    <h1>🛡️ Bot Detection Monitor</h1>
-    <p class="subtitle">Real-time session tracking and threat analysis</p>
+    <div class="header-row">
+        <h1>&#128737;&#65039; Tickago Threat Monitor</h1>
+        <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+    <p class="subtitle">Real-time bot detection, session tracking &amp; threat analysis</p>
 
-    <button class="refresh-btn" onclick="location.reload()">🔄 Refresh</button>
-    <span class="auto-refresh">Auto-refreshes every 5 seconds</span>
+    <button class="refresh-btn" onclick="location.reload()">&#8635; Refresh</button>
+    <span class="auto-refresh">auto-refresh: 5s</span>
 
     {% if spike.is_spike %}
     <div class="spike-alert">
+        <div class="spike-alert-icon">&#9888;&#65039;</div>
         <div class="spike-alert-text">
-            <strong>⚠️ Traffic Spike Detected</strong><br>
-            <span>{{ spike.count }} evaluation requests in the last {{ spike.window_seconds }} seconds (normal traffic is well under {{ spike.threshold }}) — possible coordinated bot attack.</span>
+            <strong>Traffic Spike Detected</strong>
+            <span>{{ spike.count }} evaluation requests in the last {{ spike.window_seconds }}s (baseline is well under {{ spike.threshold }}) — possible coordinated bot attack.</span>
         </div>
     </div>
     {% else %}
     <div class="spike-baseline">
-        Recent traffic: {{ spike.count }} evaluation request{{ '' if spike.count == 1 else 's' }} in the last {{ spike.window_seconds }}s (spike alert triggers at {{ spike.threshold }}+)
+        &#9679; recent traffic: {{ spike.count }} request{{ '' if spike.count == 1 else 's' }} / {{ spike.window_seconds }}s &nbsp;(spike threshold: {{ spike.threshold }}+)
     </div>
     {% endif %}
 
     <div class="stats-grid">
         <div class="stat-card clean">
+            <div class="stat-icon">&#9989;</div>
             <div class="stat-value">{{ stats.clean }}</div>
-            <div class="stat-label">✅ Clean Sessions</div>
+            <div class="stat-label">CLEAN SESSIONS</div>
         </div>
         <div class="stat-card tier1">
+            <div class="stat-icon">&#9203;</div>
             <div class="stat-value">{{ stats.tier1 }}</div>
-            <div class="stat-label">⚠️ Tier 1 (Delay)</div>
+            <div class="stat-label">TIER 1 — DELAY</div>
         </div>
         <div class="stat-card tier2">
+            <div class="stat-icon">&#128274;</div>
             <div class="stat-value">{{ stats.tier2 }}</div>
-            <div class="stat-label">🔒 Tier 2 (CAPTCHA)</div>
+            <div class="stat-label">TIER 2 — CAPTCHA</div>
         </div>
         <div class="stat-card tier3">
+            <div class="stat-icon">&#128683;</div>
             <div class="stat-value">{{ stats.tier3 }}</div>
-            <div class="stat-label">🚫 Tier 3 (Blocked)</div>
+            <div class="stat-label">TIER 3 — BLOCKED</div>
         </div>
     </div>
 
-    <h2 class="section-title">
-        🔴 Active Sessions ({{ active_count }})
-        <span class="db-badge {{ 'online' if db_online else 'offline' }}">
-            {{ '🟢 Supabase Connected' if db_online else '🔴 DB Offline (in-memory)' }}
+    <div class="section-title">
+        <div class="title-left">
+            <span class="accent-bar"></span>
+            <span>Active Sessions ({{ active_count }})</span>
+        </div>
+        <span class="db-badge {{ '' if db_online else 'offline' }}">
+            {{ '● SUPABASE CONNECTED' if db_online else '● DB OFFLINE — IN-MEMORY' }}
         </span>
-    </h2>
-    <div class="active-sessions">
-        {% if active_sessions %}
-            {% for sid, session in active_sessions.items() %}
-            <div class="session-item">
-                <span class="session-id">{{ sid[:16] }}...</span>
-                <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
-                <span>Pages: {{ session.pages_visited | join(', ') or 'None' }}</span>
-                <span class="session-actions">Pattern: {{ session.actions | join('') or 'N/A' }}</span>
-                <span>Mouse: {{ session.mouse_movements }}</span>
-                <span>{{ "%.1f" | format(session.age) }}s ago</span>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">No active sessions</div>
-        {% endif %}
     </div>
+    {% if active_sessions %}
+    <div class="sessions-grid">
+        {% for sid, session in active_sessions.items() %}
+        <div class="session-card">
+            <div class="session-id">{{ sid[:16] }}...</div>
+            <div class="session-meta">
+                <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
+                <span>{{ "%.1f" | format(session.age) }}s ago</span>
+                <span>mouse: {{ session.mouse_movements }}</span>
+            </div>
+            <div class="session-meta">
+                <span>pages: {{ session.pages_visited | join(', ') or 'none' }}</span>
+                <span class="pattern-mini">{{ session.actions | join('') or 'N/A' }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">No active sessions</div>
+    {% endif %}
 
-    <h2 class="section-title">📋 Evaluation History ({{ logs | length }} records)</h2>
+    <div class="section-title">
+        <div class="title-left">
+            <span class="accent-bar"></span>
+            <span>Evaluation History ({{ logs | length }} records)</span>
+        </div>
+    </div>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
                 <th>Time</th>
-                <th>Session ID</th>
+                <th>Session</th>
                 <th>IP</th>
                 <th>Pattern</th>
                 <th>Duration</th>
@@ -929,26 +1115,27 @@ DASHBOARD_HTML = """
             {% if logs %}
                 {% for log in logs %}
                 <tr>
-                    <td>{{ log.time }}</td>
-                    <td><code>{{ log.session_id[:12] }}...</code></td>
-                    <td><span style="font-size:12px;color:#aaa">{{ log.get('ip', 'unknown') }}</span></td>
+                    <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#b8c2d9">{{ log.time }}</td>
+                    <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
+                    <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
                     <td><span class="pattern-code">{{ log.pattern }}</span></td>
                     <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
                     <td>{{ log.quantity }}</td>
                     <td>{{ log.mouse_movements }}</td>
-                    <td><strong>{{ log.score }}</strong></td>
-                    <td><span class="tier-badge tier-{{ log.tier }}">Tier {{ log.tier }}</span></td>
-                    <td style="font-size:12px;color:#8be9fd">{{ log.action }}</td>
-                    <td style="font-size:12px">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
+                    <td><strong style="font-family:'JetBrains Mono',monospace">{{ log.score }}</strong></td>
+                    <td><span class="tier-badge tier-{{ log.tier }}">TIER {{ log.tier }}</span></td>
+                    <td class="action-cell">{{ log.action }}</td>
+                    <td class="reasons-cell">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
                 </tr>
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="10" class="empty-state">No evaluations yet. Run a bot to see data.</td>
+                    <td colspan="11" class="empty-state">No evaluations yet. Run a bot to see data.</td>
                 </tr>
             {% endif %}
         </tbody>
     </table>
+    </div>
 
     <script>
         setTimeout(() => location.reload(), 5000);
