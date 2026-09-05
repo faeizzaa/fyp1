@@ -750,410 +750,310 @@ DASHBOARD_HTML = """
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Tickago // Threat Monitor</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <title>Tickago Admin — Monitor</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        :root {
-            --bg: #070a12;
-            --bg-grid: rgba(0, 240, 255, 0.035);
-            --card: rgba(19, 27, 46, 0.65);
-            --card-border: rgba(0, 240, 255, 0.14);
-            --cyan: #00f0ff;
-            --purple: #a78bfa;
-            --green: #12f7a0;
-            --yellow: #ffd60a;
-            --orange: #ff9f1c;
-            --red: #ff3860;
-            --text: #e6ecf7;
-            --muted: #7c88a8;
-        }
-
         body {
-            font-family: 'Space Grotesk', 'Segoe UI', sans-serif;
-            background:
-                radial-gradient(ellipse at top left, rgba(0,240,255,0.06), transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(167,139,250,0.06), transparent 50%),
-                var(--bg);
-            background-attachment: fixed;
-            color: var(--text);
-            padding: 28px 32px 60px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f1115;
+            color: #e2e5ea;
+            padding: 32px 40px 60px;
             min-height: 100vh;
-            position: relative;
         }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--bg-grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
-            background-size: 42px 42px;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        body > * { position: relative; z-index: 1; }
 
         .header-row {
             display: flex;
-            align-items: baseline;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin-bottom: 6px;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
         }
 
         h1 {
-            font-size: 1.9rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            background: linear-gradient(90deg, var(--cyan), var(--purple));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            letter-spacing: -0.5px;
+            color: #f4f5f7;
         }
 
         .live-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
             font-weight: 600;
-            letter-spacing: 1px;
-            color: var(--green);
-            border: 1px solid rgba(18, 247, 160, 0.35);
-            background: rgba(18, 247, 160, 0.08);
-            padding: 4px 10px;
-            border-radius: 20px;
+            letter-spacing: 0.4px;
+            color: #22c55e;
+            border: 1px solid #22c55e40;
+            background: #22c55e14;
+            padding: 3px 9px;
+            border-radius: 4px;
         }
 
         .live-dot {
-            width: 7px;
-            height: 7px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: var(--green);
-            box-shadow: 0 0 8px var(--green);
-            animation: pulse-dot 1.4s ease-in-out infinite;
+            background: #22c55e;
         }
 
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.75); }
-        }
-
-        .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.92rem; }
+        .subtitle { color: #8b93a5; margin-bottom: 22px; font-size: 0.88rem; }
 
         .refresh-btn {
-            background: linear-gradient(135deg, var(--cyan), #0090aa);
-            color: #04141a;
+            background: #6c5ce7;
+            color: #fff;
             border: none;
-            padding: 10px 22px;
-            border-radius: 8px;
+            padding: 8px 18px;
+            border-radius: 6px;
             cursor: pointer;
-            font-weight: 700;
-            font-family: 'Space Grotesk', sans-serif;
-            box-shadow: 0 0 18px rgba(0, 240, 255, 0.25);
-            transition: transform 0.15s, box-shadow 0.15s;
+            font-weight: 600;
+            font-size: 0.85rem;
+            font-family: inherit;
         }
-        .refresh-btn:hover { transform: translateY(-1px); box-shadow: 0 0 26px rgba(0, 240, 255, 0.4); }
+        .refresh-btn:hover { background: #5b4cc4; }
 
-        .auto-refresh { color: var(--muted); font-size: 0.82rem; margin-left: 14px; font-family: 'JetBrains Mono', monospace; }
+        .auto-refresh { color: #6b7280; font-size: 0.8rem; margin-left: 12px; }
 
         .spike-alert {
-            background: linear-gradient(135deg, rgba(255,56,96,0.14), rgba(255,56,96,0.04));
-            border: 1px solid rgba(255,56,96,0.5);
-            border-radius: 14px;
-            padding: 16px 22px;
-            margin: 20px 0;
+            background: #7f1d1d20;
+            border: 1px solid #ef444460;
+            border-left: 3px solid #ef4444;
+            border-radius: 6px;
+            padding: 13px 18px;
+            margin: 18px 0;
             display: flex;
             align-items: center;
-            gap: 14px;
-            box-shadow: 0 0 30px rgba(255,56,96,0.15);
-            animation: pulse-border 1.6s ease-in-out infinite;
+            gap: 12px;
         }
-        @keyframes pulse-border {
-            0%, 100% { border-color: rgba(255,56,96,0.5); }
-            50% { border-color: rgba(255,56,96,0.9); }
-        }
-        .spike-alert-icon { font-size: 1.6rem; }
-        .spike-alert-text strong { color: var(--red); font-size: 1.02rem; display: block; margin-bottom: 2px; }
-        .spike-alert-text span { color: var(--muted); font-size: 0.85rem; }
+        .spike-alert-icon { font-size: 1.2rem; }
+        .spike-alert-text strong { color: #f87171; font-size: 0.92rem; display: block; margin-bottom: 2px; }
+        .spike-alert-text span { color: #9ca3af; font-size: 0.82rem; }
 
         .spike-baseline {
-            color: var(--muted);
-            font-size: 0.82rem;
-            margin: 18px 0;
-            font-family: 'JetBrains Mono', monospace;
+            color: #6b7280;
+            font-size: 0.8rem;
+            margin: 16px 0;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 18px;
-            margin-bottom: 30px;
+            gap: 14px;
+            margin-bottom: 28px;
         }
 
         .stat-card {
-            background: var(--card);
-            backdrop-filter: blur(10px);
-            border-radius: 14px;
-            padding: 22px 20px;
-            border: 1px solid var(--card-border);
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
+            background: #171a21;
+            border: 1px solid #262b36;
+            border-radius: 8px;
+            padding: 18px 20px;
+            border-left: 3px solid transparent;
         }
-        .stat-card:hover { transform: translateY(-3px); }
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            top: -40%; right: -20%;
-            width: 120px; height: 120px;
-            border-radius: 50%;
-            filter: blur(30px);
-            opacity: 0.5;
-        }
-        .stat-card .stat-icon { font-size: 1.3rem; margin-bottom: 8px; opacity: 0.85; }
-        .stat-value { font-size: 2.4rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-        .stat-label { color: var(--muted); font-size: 0.82rem; margin-top: 4px; letter-spacing: 0.3px; }
+        .stat-value { font-size: 2rem; font-weight: 700; }
+        .stat-label { color: #8b93a5; font-size: 0.78rem; margin-top: 4px; letter-spacing: 0.2px; }
 
-        .stat-card.clean { border-color: rgba(18,247,160,0.3); }
-        .stat-card.clean .stat-value { color: var(--green); }
-        .stat-card.clean::after { background: var(--green); }
-        .stat-card.clean:hover { box-shadow: 0 0 26px rgba(18,247,160,0.18); }
+        .stat-card.clean { border-left-color: #22c55e; }
+        .stat-card.clean .stat-value { color: #22c55e; }
 
-        .stat-card.tier1 { border-color: rgba(255,214,10,0.3); }
-        .stat-card.tier1 .stat-value { color: var(--yellow); }
-        .stat-card.tier1::after { background: var(--yellow); }
-        .stat-card.tier1:hover { box-shadow: 0 0 26px rgba(255,214,10,0.18); }
+        .stat-card.tier1 { border-left-color: #eab308; }
+        .stat-card.tier1 .stat-value { color: #eab308; }
 
-        .stat-card.tier2 { border-color: rgba(255,159,28,0.3); }
-        .stat-card.tier2 .stat-value { color: var(--orange); }
-        .stat-card.tier2::after { background: var(--orange); }
-        .stat-card.tier2:hover { box-shadow: 0 0 26px rgba(255,159,28,0.18); }
+        .stat-card.tier2 { border-left-color: #f97316; }
+        .stat-card.tier2 .stat-value { color: #f97316; }
 
-        .stat-card.tier3 { border-color: rgba(255,56,96,0.3); }
-        .stat-card.tier3 .stat-value { color: var(--red); }
-        .stat-card.tier3::after { background: var(--red); }
-        .stat-card.tier3:hover { box-shadow: 0 0 26px rgba(255,56,96,0.18); }
+        .stat-card.tier3 { border-left-color: #ef4444; }
+        .stat-card.tier3 .stat-value { color: #ef4444; }
 
         .section-title {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin: 34px 0 14px;
-            font-size: 1.05rem;
+            margin: 30px 0 12px;
+            font-size: 0.95rem;
             font-weight: 700;
-            color: var(--text);
-        }
-        .section-title .title-left { display: flex; align-items: center; gap: 10px; }
-        .section-title .accent-bar {
-            width: 4px; height: 20px;
-            background: linear-gradient(180deg, var(--cyan), var(--purple));
-            border-radius: 2px;
+            color: #f4f5f7;
         }
 
         .db-badge {
-            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             font-weight: 600;
-            background: rgba(18,247,160,0.1);
-            color: var(--green);
-            border: 1px solid rgba(18,247,160,0.35);
-            padding: 4px 11px;
-            border-radius: 20px;
+            background: #22c55e14;
+            color: #22c55e;
+            border: 1px solid #22c55e40;
+            padding: 3px 10px;
+            border-radius: 4px;
         }
-        .db-badge.offline { background: rgba(255,56,96,0.1); color: var(--red); border-color: rgba(255,56,96,0.35); }
+        .db-badge.offline { background: #ef444414; color: #f87171; border-color: #ef444440; }
 
         .sessions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            gap: 10px;
         }
         .session-card {
-            background: var(--card);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            padding: 14px 16px;
-            transition: border-color 0.2s;
+            background: #171a21;
+            border: 1px solid #262b36;
+            border-radius: 8px;
+            padding: 12px 15px;
         }
-        .session-card:hover { border-color: rgba(0,240,255,0.4); }
-        .session-id { font-family: 'JetBrains Mono', monospace; color: var(--cyan); font-size: 0.85rem; font-weight: 600; }
-        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 0.78rem; color: var(--muted); }
+        .session-id { font-family: 'Courier New', monospace; color: #a29bfe; font-size: 0.83rem; font-weight: 600; }
+        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; font-size: 0.77rem; color: #8b93a5; }
         .session-meta .ip-badge {
-            background: rgba(255,255,255,0.05);
-            padding: 2px 8px;
+            background: #1f232c;
+            padding: 2px 7px;
             border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            color: #b8c2d9;
+            font-family: 'Courier New', monospace;
+            color: #c3c9d4;
         }
-        .session-meta .pattern-mini { color: var(--yellow); font-family: 'JetBrains Mono', monospace; }
+        .session-meta .pattern-mini { color: #eab308; font-family: 'Courier New', monospace; }
 
         .blocked-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 10px;
         }
         .blocked-card {
-            background: linear-gradient(135deg, rgba(255,56,96,0.08), rgba(19,27,46,0.65));
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,56,96,0.3);
-            border-radius: 12px;
-            padding: 16px 18px;
+            background: #171a21;
+            border: 1px solid #262b36;
+            border-left: 3px solid #ef4444;
+            border-radius: 8px;
+            padding: 14px 16px;
         }
         .blocked-card .blocked-username {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--red);
+            font-family: 'Courier New', monospace;
+            color: #f87171;
             font-weight: 700;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
         }
         .blocked-card .blocked-meta {
-            margin-top: 10px;
-            font-size: 0.78rem;
-            color: var(--muted);
+            margin-top: 9px;
+            font-size: 0.77rem;
+            color: #8b93a5;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
-        .blocked-card .blocked-meta strong { color: #b8c2d9; }
+        .blocked-card .blocked-meta strong { color: #c3c9d4; }
         .unblock-btn {
-            margin-top: 12px;
+            margin-top: 11px;
             width: 100%;
-            background: rgba(18,247,160,0.1);
-            color: var(--green);
-            border: 1px solid rgba(18,247,160,0.4);
-            padding: 7px;
-            border-radius: 7px;
+            background: transparent;
+            color: #22c55e;
+            border: 1px solid #22c55e50;
+            padding: 6px;
+            border-radius: 6px;
             cursor: pointer;
-            font-family: 'JetBrains Mono', monospace;
             font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            transition: background 0.15s;
+            font-weight: 600;
+            font-family: inherit;
         }
-        .unblock-btn:hover { background: rgba(18,247,160,0.2); }
+        .unblock-btn:hover { background: #22c55e14; }
         .unblock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .empty-state {
             text-align: center;
-            padding: 40px;
-            color: var(--muted);
-            background: var(--card);
-            border: 1px dashed var(--card-border);
-            border-radius: 12px;
+            padding: 34px;
+            color: #6b7280;
+            background: #171a21;
+            border: 1px dashed #262b36;
+            border-radius: 8px;
+            font-size: 0.88rem;
         }
 
         .table-wrap {
-            background: var(--card);
-            backdrop-filter: blur(10px);
-            border-radius: 14px;
-            border: 1px solid var(--card-border);
+            background: #171a21;
+            border-radius: 8px;
+            border: 1px solid #262b36;
             overflow: hidden;
         }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 16px; text-align: left; }
+        th, td { padding: 10px 14px; text-align: left; }
         th {
-            background: rgba(0,240,255,0.06);
-            color: var(--cyan);
+            background: #1c2029;
+            color: #8b93a5;
             font-weight: 600;
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-            border-bottom: 1px solid var(--card-border);
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #262b36;
         }
-        td { border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.88rem; }
+        td { border-bottom: 1px solid #1e222b; font-size: 0.85rem; }
         tbody tr:last-child td { border-bottom: none; }
-        tbody tr { transition: background 0.15s; }
-        tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
-        tbody tr:hover { background: rgba(0,240,255,0.05); }
+        tbody tr:hover { background: #1c2029; }
 
         .pattern-code {
-            font-family: 'JetBrains Mono', monospace;
-            background: rgba(255,255,255,0.06);
-            padding: 3px 8px;
-            border-radius: 5px;
-            font-size: 0.82rem;
-            color: #d4dcf0;
+            font-family: 'Courier New', monospace;
+            background: #1f232c;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #c3c9d4;
         }
 
         .tier-badge {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 3px 10px;
+            border-radius: 4px;
             font-weight: 700;
-            font-size: 0.75rem;
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
         }
-        .tier-0 { background: rgba(18,247,160,0.15); color: var(--green); box-shadow: 0 0 10px rgba(18,247,160,0.15) inset; }
-        .tier-1 { background: rgba(255,214,10,0.15); color: var(--yellow); box-shadow: 0 0 10px rgba(255,214,10,0.15) inset; }
-        .tier-2 { background: rgba(255,159,28,0.15); color: var(--orange); box-shadow: 0 0 10px rgba(255,159,28,0.15) inset; }
-        .tier-3 { background: rgba(255,56,96,0.18); color: var(--red); box-shadow: 0 0 10px rgba(255,56,96,0.2) inset; }
+        .tier-0 { background: #22c55e1a; color: #22c55e; }
+        .tier-1 { background: #eab3081a; color: #eab308; }
+        .tier-2 { background: #f973161a; color: #f97316; }
+        .tier-3 { background: #ef44441a; color: #ef4444; }
 
-        .ip-cell { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--muted); }
-        .action-cell { font-size: 0.78rem; color: var(--purple); font-family: 'JetBrains Mono', monospace; }
-        .reasons-cell { font-size: 0.78rem; color: var(--muted); max-width: 260px; }
+        .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #8b93a5; }
+        .action-cell { font-size: 0.78rem; color: #a29bfe; }
+        .reasons-cell { font-size: 0.78rem; color: #8b93a5; max-width: 260px; }
     </style>
 </head>
 <body>
     <div class="header-row">
-        <h1>&#128737;&#65039; Tickago Threat Monitor</h1>
+        <h1>Tickago Admin — Monitor</h1>
         <span class="live-badge"><span class="live-dot"></span>LIVE</span>
     </div>
-    <p class="subtitle">Real-time bot detection, session tracking &amp; threat analysis</p>
+    <p class="subtitle">Bot detection, session tracking &amp; account moderation</p>
 
-    <button class="refresh-btn" onclick="location.reload()">&#8635; Refresh</button>
-    <span class="auto-refresh">auto-refresh: 5s</span>
+    <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+    <span class="auto-refresh">auto-refresh every 5s</span>
 
     {% if spike.is_spike %}
     <div class="spike-alert">
-        <div class="spike-alert-icon">&#9888;&#65039;</div>
+        <div class="spike-alert-icon">⚠</div>
         <div class="spike-alert-text">
-            <strong>Traffic Spike Detected</strong>
+            <strong>Traffic spike detected</strong>
             <span>{{ spike.count }} evaluation requests in the last {{ spike.window_seconds }}s (baseline is well under {{ spike.threshold }}) — possible coordinated bot attack.</span>
         </div>
     </div>
     {% else %}
     <div class="spike-baseline">
-        &#9679; recent traffic: {{ spike.count }} request{{ '' if spike.count == 1 else 's' }} / {{ spike.window_seconds }}s &nbsp;(spike threshold: {{ spike.threshold }}+)
+        Recent traffic: {{ spike.count }} request{{ '' if spike.count == 1 else 's' }} / {{ spike.window_seconds }}s &nbsp;(spike threshold: {{ spike.threshold }}+)
     </div>
     {% endif %}
 
     <div class="stats-grid">
         <div class="stat-card clean">
-            <div class="stat-icon">&#9989;</div>
             <div class="stat-value">{{ stats.clean }}</div>
             <div class="stat-label">CLEAN SESSIONS</div>
         </div>
         <div class="stat-card tier1">
-            <div class="stat-icon">&#9203;</div>
             <div class="stat-value">{{ stats.tier1 }}</div>
             <div class="stat-label">TIER 1 — DELAY</div>
         </div>
         <div class="stat-card tier2">
-            <div class="stat-icon">&#128274;</div>
             <div class="stat-value">{{ stats.tier2 }}</div>
             <div class="stat-label">TIER 2 — CAPTCHA</div>
         </div>
         <div class="stat-card tier3">
-            <div class="stat-icon">&#128683;</div>
             <div class="stat-value">{{ stats.tier3 }}</div>
             <div class="stat-label">TIER 3 — BLOCKED</div>
         </div>
     </div>
 
     <div class="section-title">
-        <div class="title-left">
-            <span class="accent-bar"></span>
-            <span>Active Sessions ({{ active_count }})</span>
-        </div>
+        <span>Active Sessions ({{ active_count }})</span>
         <span class="db-badge {{ '' if db_online else 'offline' }}">
-            {{ '● SUPABASE CONNECTED' if db_online else '● DB OFFLINE — IN-MEMORY' }}
+            {{ 'SUPABASE CONNECTED' if db_online else 'DB OFFLINE — IN-MEMORY' }}
         </span>
     </div>
     {% if active_sessions %}
@@ -1178,16 +1078,13 @@ DASHBOARD_HTML = """
     {% endif %}
 
     <div class="section-title">
-        <div class="title-left">
-            <span class="accent-bar"></span>
-            <span>Blocked Accounts ({{ blocked_accounts | length }})</span>
-        </div>
+        <span>Blocked Accounts ({{ blocked_accounts | length }})</span>
     </div>
     {% if blocked_accounts %}
     <div class="blocked-grid">
         {% for user in blocked_accounts %}
         <div class="blocked-card" id="blocked-card-{{ user.id }}">
-            <div class="blocked-username">&#128683; {{ user.username }}</div>
+            <div class="blocked-username">{{ user.username }}</div>
             <div class="blocked-meta">
                 <span><strong>Blocked at:</strong> {{ user.blocked_at or 'unknown' }}</span>
                 <span><strong>Ghost tickets before block:</strong> {{ user.ghost_ticket_count or 0 }}</span>
@@ -1195,7 +1092,7 @@ DASHBOARD_HTML = """
                 <span><strong>Last known IP:</strong> {{ user.last_known_ip }}</span>
             </div>
             <button class="unblock-btn" onclick="unblockUser({{ user.id }})" id="unblock-btn-{{ user.id }}">
-                &#8635; UNBLOCK ACCOUNT
+                Unblock account
             </button>
         </div>
         {% endfor %}
@@ -1205,10 +1102,7 @@ DASHBOARD_HTML = """
     {% endif %}
 
     <div class="section-title">
-        <div class="title-left">
-            <span class="accent-bar"></span>
-            <span>Evaluation History ({{ logs | length }} records)</span>
-        </div>
+        <span>Evaluation History ({{ logs | length }} records)</span>
     </div>
     <div class="table-wrap">
     <table>
@@ -1231,14 +1125,14 @@ DASHBOARD_HTML = """
             {% if logs %}
                 {% for log in logs %}
                 <tr>
-                    <td style="font-family:'JetBrains Mono',monospace;font-size:0.78rem;color:#b8c2d9">{{ log.time }}</td>
+                    <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#8b93a5">{{ log.time }}</td>
                     <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
                     <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
                     <td><span class="pattern-code">{{ log.pattern }}</span></td>
                     <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
                     <td>{{ log.quantity }}</td>
                     <td>{{ log.mouse_movements }}</td>
-                    <td><strong style="font-family:'JetBrains Mono',monospace">{{ log.score }}</strong></td>
+                    <td><strong>{{ log.score }}</strong></td>
                     <td><span class="tier-badge tier-{{ log.tier }}">TIER {{ log.tier }}</span></td>
                     <td class="action-cell">{{ log.action }}</td>
                     <td class="reasons-cell">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
@@ -1266,13 +1160,13 @@ DASHBOARD_HTML = """
                     } else {
                         alert('Failed to unblock: ' + (data.error || 'unknown error'));
                         btn.disabled = false;
-                        btn.textContent = '↻ UNBLOCK ACCOUNT';
+                        btn.textContent = 'Unblock account';
                     }
                 })
                 .catch(err => {
                     alert('Network error: ' + err);
                     btn.disabled = false;
-                    btn.textContent = '↻ UNBLOCK ACCOUNT';
+                    btn.textContent = 'Unblock account';
                 });
         }
 
