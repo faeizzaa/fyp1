@@ -244,7 +244,8 @@ def save_evaluation_to_db(log):
             "tier":            log["tier"],
             "reasons":         ", ".join(log["reasons"]) if isinstance(log["reasons"], list) else log["reasons"],
             "ip_address":      log.get("ip", "unknown"),
-            "action":          log.get("action", "none")
+            "action":          log.get("action", "none"),
+            "user_id":         log.get("user_id")
         }).execute()
         print(f"[DB] Evaluation log saved to Supabase.")
     except Exception as e:
@@ -323,6 +324,49 @@ def count_tickets_sold_to_user(user_id):
     except Exception as e:
         print(f"[DB] Failed to count tickets for user: {e}")
         return 0
+
+def get_blocked_accounts():
+    """All currently-blocked accounts for the dashboard's Blocked
+    Accounts panel, each enriched with their most recent known IP
+    (looked up via evaluation_logs.user_id, the newest evaluate call
+    that account made - best-effort, since older log rows predating
+    the user_id column won't have one to match against)."""
+    if not supabase:
+        return []
+    try:
+        result = supabase.table("users").select("*").eq("is_blocked", True).execute()
+        blocked = result.data or []
+
+        for user in blocked:
+            try:
+                ip_result = supabase.table("evaluation_logs") \
+                    .select("ip_address") \
+                    .eq("user_id", user["id"]) \
+                    .order("created_at", desc=True) \
+                    .limit(1) \
+                    .execute()
+                user["last_known_ip"] = ip_result.data[0]["ip_address"] if ip_result.data else "unknown"
+            except Exception as e:
+                print(f"[DB] Failed to look up last IP for user {user.get('id')}: {e}")
+                user["last_known_ip"] = "unknown"
+
+        # Most recently blocked first
+        blocked.sort(key=lambda u: u.get("blocked_at") or "", reverse=True)
+        return blocked
+    except Exception as e:
+        print(f"[DB] Failed to load blocked accounts: {e}")
+        return []
+
+def unblock_account(user_id):
+    if not supabase:
+        return False
+    try:
+        supabase.table("users").update({"is_blocked": False}).eq("id", user_id).execute()
+        print(f"[Auth] Admin unblocked user_id={user_id}")
+        return True
+    except Exception as e:
+        print(f"[DB] Failed to unblock account: {e}")
+        return False
 
 def count_tier3_hits_by_ip(ip_address):
     """Lifetime count of Tier-3 (ghost ticket) evaluations logged against
@@ -951,6 +995,51 @@ DASHBOARD_HTML = """
         }
         .session-meta .pattern-mini { color: var(--yellow); font-family: 'JetBrains Mono', monospace; }
 
+        .blocked-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 12px;
+        }
+        .blocked-card {
+            background: linear-gradient(135deg, rgba(255,56,96,0.08), rgba(19,27,46,0.65));
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,56,96,0.3);
+            border-radius: 12px;
+            padding: 16px 18px;
+        }
+        .blocked-card .blocked-username {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--red);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .blocked-card .blocked-meta {
+            margin-top: 10px;
+            font-size: 0.78rem;
+            color: var(--muted);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .blocked-card .blocked-meta strong { color: #b8c2d9; }
+        .unblock-btn {
+            margin-top: 12px;
+            width: 100%;
+            background: rgba(18,247,160,0.1);
+            color: var(--green);
+            border: 1px solid rgba(18,247,160,0.4);
+            padding: 7px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: background 0.15s;
+        }
+        .unblock-btn:hover { background: rgba(18,247,160,0.2); }
+        .unblock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .empty-state {
             text-align: center;
             padding: 40px;
@@ -1091,6 +1180,33 @@ DASHBOARD_HTML = """
     <div class="section-title">
         <div class="title-left">
             <span class="accent-bar"></span>
+            <span>Blocked Accounts ({{ blocked_accounts | length }})</span>
+        </div>
+    </div>
+    {% if blocked_accounts %}
+    <div class="blocked-grid">
+        {% for user in blocked_accounts %}
+        <div class="blocked-card" id="blocked-card-{{ user.id }}">
+            <div class="blocked-username">&#128683; {{ user.username }}</div>
+            <div class="blocked-meta">
+                <span><strong>Blocked at:</strong> {{ user.blocked_at or 'unknown' }}</span>
+                <span><strong>Ghost tickets before block:</strong> {{ user.ghost_ticket_count or 0 }}</span>
+                <span><strong>Account created:</strong> {{ user.created_at }}</span>
+                <span><strong>Last known IP:</strong> {{ user.last_known_ip }}</span>
+            </div>
+            <button class="unblock-btn" onclick="unblockUser({{ user.id }})" id="unblock-btn-{{ user.id }}">
+                &#8635; UNBLOCK ACCOUNT
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">No blocked accounts</div>
+    {% endif %}
+
+    <div class="section-title">
+        <div class="title-left">
+            <span class="accent-bar"></span>
             <span>Evaluation History ({{ logs | length }} records)</span>
         </div>
     </div>
@@ -1138,6 +1254,28 @@ DASHBOARD_HTML = """
     </div>
 
     <script>
+        function unblockUser(userId) {
+            const btn = document.getElementById(`unblock-btn-${userId}`);
+            btn.disabled = true;
+            btn.textContent = 'Unblocking...';
+            fetch(`/api/admin/unblock/${userId}`, { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'unblocked') {
+                        location.reload();
+                    } else {
+                        alert('Failed to unblock: ' + (data.error || 'unknown error'));
+                        btn.disabled = false;
+                        btn.textContent = '↻ UNBLOCK ACCOUNT';
+                    }
+                })
+                .catch(err => {
+                    alert('Network error: ' + err);
+                    btn.disabled = false;
+                    btn.textContent = '↻ UNBLOCK ACCOUNT';
+                });
+        }
+
         setTimeout(() => location.reload(), 5000);
     </script>
 </body>
@@ -1203,6 +1341,14 @@ def dedupe_logs_by_session(logs):
         deduped.append(log)
     return deduped
 
+@app.route('/api/admin/unblock/<int:user_id>', methods=['POST'])
+@requires_admin_auth
+def admin_unblock(user_id):
+    success = unblock_account(user_id)
+    if success:
+        return jsonify({'status': 'unblocked', 'user_id': user_id})
+    return jsonify({'error': 'Failed to unblock account'}), 500
+
 @app.route('/monitor')
 @requires_admin_auth
 def monitor_dashboard():
@@ -1235,6 +1381,7 @@ def monitor_dashboard():
         }
 
     spike = detect_traffic_spike()
+    blocked_accounts = get_blocked_accounts()
 
     return render_template_string(
         DASHBOARD_HTML,
@@ -1243,7 +1390,8 @@ def monitor_dashboard():
         active_count=len(sessions),
         logs=logs,
         db_online=db_online,
-        spike=spike
+        spike=spike,
+        blocked_accounts=blocked_accounts
     )
 
 
@@ -1377,7 +1525,8 @@ def captcha_attempt():
         'score':           score,
         'tier':            tier,
         'reasons':         reasons,
-        'ip':              ip_address
+        'ip':              ip_address,
+        'user_id':         session.get('user_id')
     }
     evaluation_logs.append(log_entry)
     save_logs()
@@ -1435,7 +1584,8 @@ def evaluate_session():
             'tier':            3,
             'reasons':         ["Blocked account attempted checkout"],
             'ip':              ip_address,
-            'action':          'blocked'
+            'action':          'blocked',
+            'user_id':         blocked_user['id']
         }
         evaluation_logs.append(log_entry)
         save_logs()
@@ -1506,7 +1656,8 @@ def evaluate_session():
             'tier':            tier,
             'reasons':         reasons,
             'ip':              ip_address,
-            'action':          'ghost' if tier == 3 else 'none'
+            'action':          'ghost' if tier == 3 else 'none',
+            'user_id':         session.get('user_id')
         }
         evaluation_logs.append(log_entry)
         save_logs()
@@ -1698,7 +1849,7 @@ def evaluate_session():
 
             if supabase and current_user:
                 try:
-                    supabase.table("users").update({"is_blocked": True}).eq("id", current_user['id']).execute()
+                    supabase.table("users").update({"is_blocked": True, "blocked_at": now_myt_iso()}).eq("id", current_user['id']).execute()
                 except Exception as e:
                     print(f"[DB] Failed to flag account as blocked: {e}")
 
@@ -1728,7 +1879,8 @@ def evaluate_session():
         'tier':            tier,
         'reasons':         reasons,
         'ip':              ip_address,
-        'action':          action
+        'action':          action,
+        'user_id':         session.get('user_id')
     }
     evaluation_logs.append(log_entry)
     save_logs()
