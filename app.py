@@ -1239,7 +1239,7 @@ DASHBOARD_HTML = """
             <div class="stat-pill tier3">
                 <div class="icon-badge">⛔</div>
                 <div class="stat-value">{{ stats.tier3 }}</div>
-                <div class="stat-label">Tier 3 — Blocked</div>
+                <div class="stat-label">Tier 3 — Ghost Ticker/Blocked</div>
             </div>
         </div>
 
