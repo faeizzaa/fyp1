@@ -1036,7 +1036,7 @@ DASHBOARD_HTML = """
             border-top: 1px solid rgba(255,255,255,0.06);
         }
         table { width: 100%; table-layout: fixed; border-collapse: collapse; }
-        col.col-time     { width: 9%; }
+        col.col-time     { width: 7%; }
         col.col-session  { width: 8%; }
         col.col-username { width: 8%; }
         col.col-ip       { width: 9%; }
@@ -1046,8 +1046,8 @@ DASHBOARD_HTML = """
         col.col-mouse    { width: 5%; }
         col.col-score    { width: 5%; }
         col.col-tier     { width: 8%; }
-        col.col-action   { width: 12%; }
-        col.col-reasons  { width: 16%; }
+        col.col-action   { width: 15%; }
+        col.col-reasons  { width: 15%; }
         th, td {
             padding: 10px 10px;
             text-align: left;
@@ -1055,6 +1055,7 @@ DASHBOARD_HTML = """
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            vertical-align: top;
         }
         td.reasons-cell { white-space: normal; overflow: visible; word-break: break-word; }
         th {
@@ -1095,7 +1096,7 @@ DASHBOARD_HTML = """
 
         .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #7d93ad; }
         .username-cell { font-weight: 700; color: #ffffff; font-size: 0.84rem; }
-        .action-cell { font-size: 0.78rem; color: #82b1ff; font-weight: 600; }
+        .action-cell { font-size: 0.76rem; color: #82b1ff; font-weight: 600; white-space: normal; overflow: visible; word-break: break-word; }
         .reasons-cell { font-size: 0.78rem; color: #7d93ad; max-width: 260px; }
 
         /* ===== MODAL (dark) ===== */
@@ -1369,7 +1370,7 @@ DASHBOARD_HTML = """
                     {% if logs %}
                         {% for log in logs %}
                         <tr>
-                            <td style="font-family:'Courier New',monospace;font-size:0.72rem;color:#5f7690">{{ log.time }}</td>
+                            <td style="font-family:'Courier New',monospace;font-size:0.7rem;color:#5f7690;line-height:1.4;white-space:normal;">{{ log.time.split(' ')[0] if ' ' in log.time else log.time }}<br>{{ log.time.split(' ')[1] if ' ' in log.time else '' }}</td>
                             <td title="{{ log.session_id }}"><code class="pattern-code">{{ log.session_id[:10] }}...</code></td>
                             <td class="username-cell" title="{{ log.username }}">{{ log.username }}</td>
                             <td class="ip-cell" title="{{ log.get('ip', 'unknown') }}">{{ log.get('ip', 'unknown') }}</td>
