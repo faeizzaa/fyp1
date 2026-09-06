@@ -779,65 +779,12 @@ DASHBOARD_HTML = """
 
         a { text-decoration: none; color: inherit; }
 
-        /* ===== SIDEBAR ===== */
-        .sidebar {
-            position: fixed;
-            top: 0; left: 0; bottom: 0;
-            width: 232px;
-            background: #0d1f33;
-            border-right: 1px solid rgba(255,255,255,0.06);
-            padding: 22px 16px;
-            display: flex;
-            flex-direction: column;
+         /* ===== MAIN ===== */
+        .main {
+            margin-left: 0;
+            padding: 32px 40px 60px;
         }
-        .sidebar-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 0 8px 20px;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-        }
-        .sidebar-brand .logo-sq {
-            width: 30px; height: 30px;
-            background: #4fc3f7;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            color: #06131f; font-weight: 800; font-size: 14px;
-            flex-shrink: 0;
-        }
-        .sidebar-brand .brand-text { font-weight: 700; font-size: 0.95rem; color: #eef2f7; }
-        .sidebar-brand .brand-text span { display: block; font-size: 0.66rem; font-weight: 600; color: #5f7690; letter-spacing: 0.5px; }
 
-        .nav-group { margin-top: 18px; }
-        .nav-label {
-            font-size: 0.68rem;
-            font-weight: 700;
-            letter-spacing: 0.6px;
-            color: #46617e;
-            padding: 0 10px;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 10px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #a8bcd4;
-            margin-bottom: 2px;
-        }
-        .nav-link:hover { background: rgba(255,255,255,0.05); color: #eef2f7; }
-        .nav-link .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; }
-
-        .sidebar-footer {
-            margin-top: auto;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255,255,255,0.06);
-        }
         .live-badge {
             display: inline-flex;
             align-items: center;
@@ -859,14 +806,7 @@ DASHBOARD_HTML = """
             0%   { box-shadow: 0 0 0 0 rgba(52,211,153,0.45); }
             70%  { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
             100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
-        }
-        .sidebar-footer .auto-refresh { display: block; font-size: 0.72rem; color: #46617e; margin-top: 8px; }
-
-        /* ===== MAIN ===== */
-        .main {
-            margin-left: 232px;
-            padding: 32px 40px 60px;
-        }
+        }       
 
         .topbar {
             display: flex;
@@ -1076,32 +1016,45 @@ DASHBOARD_HTML = """
             font-size: 0.86rem;
         }
 
-        /* ===== TABLE ===== */
+         /* ===== TABLE ===== */
         .table-wrap {
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
+            overflow-x: hidden;
             border-top: 1px solid rgba(255,255,255,0.06);
         }
-        .table-wrap::-webkit-scrollbar { height: 10px; }
-        .table-wrap::-webkit-scrollbar-track { background: #0d1f33; }
-        .table-wrap::-webkit-scrollbar-thumb { background: #2c4258; border-radius: 5px; }
-        .table-wrap::-webkit-scrollbar-thumb:hover { background: #3a5771; }
-        table { width: 100%; min-width: 1150px; border-collapse: collapse; }
-        th, td { padding: 12px 16px; text-align: left; white-space: nowrap; }
-        td.reasons-cell { white-space: normal; min-width: 220px; }
+        table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+        col.col-time     { width: 9%; }
+        col.col-session  { width: 8%; }
+        col.col-username { width: 8%; }
+        col.col-ip       { width: 9%; }
+        col.col-pattern  { width: 10%; }
+        col.col-duration { width: 6%; }
+        col.col-qty      { width: 4%; }
+        col.col-mouse    { width: 5%; }
+        col.col-score    { width: 5%; }
+        col.col-tier     { width: 8%; }
+        col.col-action   { width: 12%; }
+        col.col-reasons  { width: 16%; }
+        th, td {
+            padding: 10px 10px;
+            text-align: left;
+            font-size: 0.76rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        td.reasons-cell { white-space: normal; overflow: visible; word-break: break-word; }
         th {
             background: rgba(255,255,255,0.03);
             color: #5f7690;
             font-weight: 700;
-            font-size: 0.7rem;
+            font-size: 0.66rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             border-bottom: 1px solid rgba(255,255,255,0.06);
             position: sticky;
             top: 0;
         }
-        td { border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.84rem; color: #eef2f7; }
+        td { border-bottom: 1px solid rgba(255,255,255,0.04); color: #eef2f7; }
         tbody tr:last-child td { border-bottom: none; }
         tbody tr:hover { background: rgba(255,255,255,0.025); }
 
@@ -1208,32 +1161,13 @@ DASHBOARD_HTML = """
         @media (max-width: 1100px) {
             .two-col { grid-template-columns: 1fr; }
         }
+
         @media (max-width: 900px) {
-            .sidebar { display: none; }
-            .main { margin-left: 0; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-brand">
-            <div class="logo-sq">T</div>
-            <div class="brand-text">Tickago<span>ADMIN CONSOLE</span></div>
-        </div>
-        <div class="nav-group">
-            <div class="nav-label">Monitor</div>
-            <a class="nav-link" href="#overview"><span class="nav-icon">◆</span>Overview</a>
-            <a class="nav-link" href="#sessions"><span class="nav-icon">◇</span>Active Sessions</a>
-            <a class="nav-link" href="#blocked"><span class="nav-icon">⛔</span>Blocked Accounts</a>
-            <a class="nav-link" href="#history"><span class="nav-icon">▤</span>Evaluation History</a>
-        </div>
-        <div class="sidebar-footer">
-            <span class="live-badge"><span class="live-dot"></span>LIVE</span>
-            <span class="auto-refresh">Auto-refreshes every 5s</span>
-        </div>
-    </div>
-
     <div class="main">
         <div id="overview"></div>
         <div class="topbar">
@@ -1241,7 +1175,8 @@ DASHBOARD_HTML = """
                 <h1>Bot Detection Monitor</h1>
                 <p class="subtitle">Real-time session tracking &amp; account moderation for Tickago</p>
             </div>
-            <div>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <span class="live-badge"><span class="live-dot"></span>LIVE</span>
                 <button class="refresh-btn" onclick="location.reload()">Refresh</button>
                 <span class="auto-refresh">auto-refresh every 5s</span>
             </div>
@@ -1285,6 +1220,7 @@ DASHBOARD_HTML = """
         </div>
 
         <div id="sessions"></div>
+        <div id="blocked"></div>
         <div class="two-col">
             <div class="panel">
                 <div class="panel-header">
@@ -1316,7 +1252,6 @@ DASHBOARD_HTML = """
                 </div>
             </div>
 
-            <div id="blocked"></div>
             <div class="panel">
                 <div class="panel-header">
                     <span class="panel-title">Blocked Accounts <span class="panel-count">({{ blocked_accounts | length }})</span></span>
@@ -1376,6 +1311,20 @@ DASHBOARD_HTML = """
             </div>
             <div class="table-wrap">
             <table>
+                <colgroup>
+                    <col class="col-time">
+                    <col class="col-session">
+                    <col class="col-username">
+                    <col class="col-ip">
+                    <col class="col-pattern">
+                    <col class="col-duration">
+                    <col class="col-qty">
+                    <col class="col-mouse">
+                    <col class="col-score">
+                    <col class="col-tier">
+                    <col class="col-action">
+                    <col class="col-reasons">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Time</th>
@@ -1396,17 +1345,17 @@ DASHBOARD_HTML = """
                     {% if logs %}
                         {% for log in logs %}
                         <tr>
-                            <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#5f7690">{{ log.time }}</td>
-                            <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
-                            <td class="username-cell">{{ log.username }}</td>
-                            <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
-                            <td><span class="pattern-code">{{ log.pattern }}</span></td>
+                            <td style="font-family:'Courier New',monospace;font-size:0.72rem;color:#5f7690">{{ log.time }}</td>
+                            <td title="{{ log.session_id }}"><code class="pattern-code">{{ log.session_id[:10] }}...</code></td>
+                            <td class="username-cell" title="{{ log.username }}">{{ log.username }}</td>
+                            <td class="ip-cell" title="{{ log.get('ip', 'unknown') }}">{{ log.get('ip', 'unknown') }}</td>
+                            <td title="{{ log.pattern }}"><span class="pattern-code">{{ log.pattern }}</span></td>
                             <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
                             <td>{{ log.quantity }}</td>
                             <td>{{ log.mouse_movements }}</td>
                             <td><strong>{{ log.score }}</strong></td>
                             <td><span class="tier-badge tier-{{ log.tier }}">TIER {{ log.tier }}</span></td>
-                            <td class="action-cell">{{ log.action }}</td>
+                            <td class="action-cell" title="{{ log.action }}">{{ log.action }}</td>
                             <td class="reasons-cell">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
                         </tr>
                         {% endfor %}
