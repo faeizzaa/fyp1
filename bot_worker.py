@@ -215,6 +215,10 @@ def run_single_bot(target_url, screen_position, bot_id, behavior="tier1", fixed_
         driver.execute_script("localStorage.clear(); sessionStorage.clear();")
 
         auth_result = register_throwaway_account(driver, bot_id, fixed_credentials=fixed_credentials)
+        if not auth_result:
+            print(f"{tag} Authentication failed (account may already be blocked) - aborting run.")
+            driver.quit()
+            return {"landing": None, "account": account_used}
         if not fixed_credentials and isinstance(auth_result, tuple):
             account_used = auth_result
 

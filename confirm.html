@@ -192,7 +192,7 @@
 
             lockButton('Verifying...');
 
-            fetch(`${API_URL}/evaluate`, {
+             fetch(`${API_URL}/evaluate`, {
     method: "POST",
     headers: {
         "Content-Type": "application/json"
@@ -206,7 +206,17 @@
         mouse_movements: mouseMoves
     })
 })
-.then(res => res.json())
+.then(res => {
+    if (res.status === 401) {
+        return res.json().then(data => {
+            unlockButton();
+            alert("You need to be logged in to continue checkout.");
+            window.location.href = data.redirect || 'login.html';
+            throw new Error('not_authenticated'); // stop the chain below
+        });
+    }
+    return res.json();
+})
 .then(data => {
 
     console.log("SERVER RESPONSE =", data);
@@ -264,6 +274,7 @@
 
 })
 .catch(err => {
+    if (err.message === 'not_authenticated') return; // already handled above
     console.error("FETCH ERROR =", err);
     unlockButton();
     alert("Could not reach the detection server (" + err + "). Check Flask + ngrok are running, then try again.");

@@ -2057,6 +2057,8 @@ def evaluate_session():
     action = "none"
     redirect_page = None
 
+    resolved_user_id = session.get('user_id')
+
     if tier == 3:
         current_user = current_user or get_current_user()
         prior_ghosts = 0
@@ -2078,6 +2080,7 @@ def evaluate_session():
 
             if supabase and current_user:
                 try:
+                    resolved_user_id = current_user['id']  # pin it down before clear()
                     supabase.table("users").update({"is_blocked": True, "blocked_at": now_myt_iso()}).eq("id", current_user['id']).execute()
                 except Exception as e:
                     print(f"[DB] Failed to flag account as blocked: {e}")
@@ -2109,7 +2112,7 @@ def evaluate_session():
         'reasons':         reasons,
         'ip':              ip_address,
         'action':          action,
-        'user_id':         session.get('user_id')
+        'user_id':         resolved_user_id
     }
     evaluation_logs.append(log_entry)
     save_logs()
