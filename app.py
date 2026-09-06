@@ -368,6 +368,21 @@ def unblock_account(user_id):
         print(f"[DB] Failed to unblock account: {e}")
         return False
 
+def get_username_map():
+    """Returns {user_id: username} for every account. evaluation_logs
+    only stores user_id (no FK/JOIN available since the schema doesn't
+    declare a real foreign key - see ERD notes), so the dashboard
+    resolves usernames itself with one bulk query instead of one query
+    per log row."""
+    if not supabase:
+        return {}
+    try:
+        result = supabase.table("users").select("id, username").execute()
+        return {u["id"]: u["username"] for u in (result.data or [])}
+    except Exception as e:
+        print(f"[DB] Failed to load username map: {e}")
+        return {}
+
 def count_tier3_hits_by_ip(ip_address):
     """Lifetime count of Tier-3 (ghost ticket) evaluations logged against
     this IP. Used alongside the per-account ghost_ticket_count so a bot
@@ -449,7 +464,8 @@ def load_logs_from_db():
                 "tier":            row.get("tier", 0),
                 "reasons":         row.get("reasons", "").split(", ") if row.get("reasons") else [],
                 "ip":              row.get("ip_address", "unknown"),
-                "action":          row.get("action")
+                "action":          row.get("action"),
+                "user_id":         row.get("user_id")
             })
         return logs
     except Exception as e:
@@ -950,6 +966,88 @@ DASHBOARD_HTML = """
         .unblock-btn:hover { background: #22c55e14; }
         .unblock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        /* Re-authentication modal for the Unblock action - clicking
+           Unblock is not enough on its own; the admin must re-enter
+           credentials every time, rather than relying on the browser's
+           already-cached Basic Auth session from opening /monitor. */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 12, 16, 0.72);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #171a21;
+            border: 1px solid #262b36;
+            border-radius: 10px;
+            padding: 24px 26px;
+            width: 100%;
+            max-width: 340px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .modal-box h3 {
+            margin: 0 0 4px;
+            font-size: 1rem;
+            color: #f1f5f9;
+        }
+        .modal-box p {
+            margin: 0 0 16px;
+            font-size: 0.8rem;
+            color: #8b93a5;
+        }
+        .modal-box label {
+            display: block;
+            font-size: 0.75rem;
+            color: #8b93a5;
+            margin-bottom: 4px;
+            margin-top: 12px;
+        }
+        .modal-box input {
+            width: 100%;
+            background: #0d0f14;
+            border: 1px solid #262b36;
+            border-radius: 6px;
+            padding: 9px 10px;
+            color: #e5e7eb;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+        }
+        .modal-box input:focus { outline: none; border-color: #6c5ce7; }
+        .modal-error {
+            display: none;
+            margin-top: 10px;
+            background: #3d1414;
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            font-size: 0.78rem;
+            padding: 8px 10px;
+            border-radius: 6px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .modal-actions button {
+            flex: 1;
+            padding: 9px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.82rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .modal-btn-cancel { background: #262b36; color: #c3c9d4; }
+        .modal-btn-cancel:hover { background: #313746; }
+        .modal-btn-confirm { background: #22c55e; color: #0a0c10; }
+        .modal-btn-confirm:hover { background: #1ea34f; }
+        .modal-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
         .empty-state {
             text-align: center;
             padding: 34px;
@@ -964,10 +1062,17 @@ DASHBOARD_HTML = """
             background: #171a21;
             border-radius: 8px;
             border: 1px solid #262b36;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
         }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 10px 14px; text-align: left; }
+        .table-wrap::-webkit-scrollbar { height: 10px; }
+        .table-wrap::-webkit-scrollbar-track { background: #171a21; }
+        .table-wrap::-webkit-scrollbar-thumb { background: #333846; border-radius: 5px; }
+        .table-wrap::-webkit-scrollbar-thumb:hover { background: #454b5c; }
+        table { width: 100%; min-width: 1150px; border-collapse: collapse; }
+        th, td { padding: 10px 14px; text-align: left; white-space: nowrap; }
+        td.reasons-cell { white-space: normal; min-width: 220px; }
         th {
             background: #1c2029;
             color: #8b93a5;
@@ -1003,6 +1108,7 @@ DASHBOARD_HTML = """
         .tier-3 { background: #ef44441a; color: #ef4444; }
 
         .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #8b93a5; }
+        .username-cell { font-weight: 600; color: #e5e7eb; font-size: 0.85rem; }
         .action-cell { font-size: 0.78rem; color: #a29bfe; }
         .reasons-cell { font-size: 0.78rem; color: #8b93a5; max-width: 260px; }
     </style>
@@ -1091,7 +1197,7 @@ DASHBOARD_HTML = """
                 <span><strong>Account created:</strong> {{ user.created_at }}</span>
                 <span><strong>Last known IP:</strong> {{ user.last_known_ip }}</span>
             </div>
-            <button class="unblock-btn" onclick="unblockUser({{ user.id }})" id="unblock-btn-{{ user.id }}">
+            <button class="unblock-btn" onclick="openUnblockModal({{ user.id }}, '{{ user.username|e }}')" id="unblock-btn-{{ user.id }}">
                 Unblock account
             </button>
         </div>
@@ -1100,6 +1206,30 @@ DASHBOARD_HTML = """
     {% else %}
     <div class="empty-state">No blocked accounts</div>
     {% endif %}
+
+    <!-- Re-authentication modal: unblocking an account is a sensitive
+         action, so the admin must type credentials again here even
+         though the browser already has a cached Basic Auth session
+         for /monitor itself. -->
+    <div class="modal-overlay" id="unblock-modal">
+        <div class="modal-box">
+            <h3>Confirm account unblock</h3>
+            <p id="unblock-modal-target">Re-enter admin credentials to unblock this account.</p>
+
+            <label for="unblock-admin-user">Admin username</label>
+            <input type="text" id="unblock-admin-user" autocomplete="username">
+
+            <label for="unblock-admin-pass">Admin password</label>
+            <input type="password" id="unblock-admin-pass" autocomplete="current-password">
+
+            <div class="modal-error" id="unblock-modal-error">Invalid admin username or password.</div>
+
+            <div class="modal-actions">
+                <button class="modal-btn-cancel" onclick="closeUnblockModal()">Cancel</button>
+                <button class="modal-btn-confirm" id="unblock-modal-confirm" onclick="submitUnblock()">Confirm unblock</button>
+            </div>
+        </div>
+    </div>
 
     <div class="section-title">
         <span>Evaluation History ({{ logs | length }} records)</span>
@@ -1110,6 +1240,7 @@ DASHBOARD_HTML = """
             <tr>
                 <th>Time</th>
                 <th>Session</th>
+                <th>Username</th>
                 <th>IP</th>
                 <th>Pattern</th>
                 <th>Duration</th>
@@ -1127,6 +1258,7 @@ DASHBOARD_HTML = """
                 <tr>
                     <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#8b93a5">{{ log.time }}</td>
                     <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
+                    <td class="username-cell">{{ log.username }}</td>
                     <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
                     <td><span class="pattern-code">{{ log.pattern }}</span></td>
                     <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
@@ -1140,7 +1272,7 @@ DASHBOARD_HTML = """
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="11" class="empty-state">No evaluations yet. Run a bot to see data.</td>
+                    <td colspan="12" class="empty-state">No evaluations yet. Run a bot to see data.</td>
                 </tr>
             {% endif %}
         </tbody>
@@ -1148,29 +1280,86 @@ DASHBOARD_HTML = """
     </div>
 
     <script>
-        function unblockUser(userId) {
-            const btn = document.getElementById(`unblock-btn-${userId}`);
-            btn.disabled = true;
-            btn.textContent = 'Unblocking...';
-            fetch(`/api/admin/unblock/${userId}`, { method: 'POST' })
-                .then(res => res.json())
+        let pendingUnblockUserId = null;
+        let autoRefreshTimer = setTimeout(() => location.reload(), 5000);
+
+        function openUnblockModal(userId, username) {
+            clearTimeout(autoRefreshTimer);
+            pendingUnblockUserId = userId;
+            document.getElementById('unblock-modal-target').textContent =
+                `Re-enter admin credentials to unblock "${username}".`;
+            document.getElementById('unblock-admin-user').value = '';
+            document.getElementById('unblock-admin-pass').value = '';
+            document.getElementById('unblock-modal-error').style.display = 'none';
+            document.getElementById('unblock-modal').classList.add('open');
+            document.getElementById('unblock-admin-user').focus();
+        }
+
+        function closeUnblockModal() {
+            pendingUnblockUserId = null;
+            document.getElementById('unblock-modal').classList.remove('open');
+            autoRefreshTimer = setTimeout(() => location.reload(), 5000);
+        }
+
+        function submitUnblock() {
+            const userId = pendingUnblockUserId;
+            if (!userId) return;
+
+            const adminUser = document.getElementById('unblock-admin-user').value.trim();
+            const adminPass = document.getElementById('unblock-admin-pass').value;
+            const errorBox  = document.getElementById('unblock-modal-error');
+            const confirmBtn = document.getElementById('unblock-modal-confirm');
+
+            if (!adminUser || !adminPass) {
+                errorBox.textContent = 'Please enter both admin username and password.';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Verifying...';
+            errorBox.style.display = 'none';
+
+            // Explicit Authorization header built from what was just typed
+            // into the modal - this deliberately does NOT rely on the
+            // browser's already-cached Basic Auth session for /monitor,
+            // so re-entering correct credentials is genuinely required
+            // for this specific action every time.
+            const encoded = btoa(`${adminUser}:${adminPass}`);
+
+            fetch(`/api/admin/unblock/${userId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Basic ${encoded}` }
+            })
+                .then(res => {
+                    if (res.status === 401) {
+                        throw new Error('unauthorized');
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (data.status === 'unblocked') {
                         location.reload();
                     } else {
-                        alert('Failed to unblock: ' + (data.error || 'unknown error'));
-                        btn.disabled = false;
-                        btn.textContent = 'Unblock account';
+                        errorBox.textContent = 'Failed to unblock: ' + (data.error || 'unknown error');
+                        errorBox.style.display = 'block';
+                        confirmBtn.disabled = false;
+                        confirmBtn.textContent = 'Confirm unblock';
                     }
                 })
                 .catch(err => {
-                    alert('Network error: ' + err);
-                    btn.disabled = false;
-                    btn.textContent = 'Unblock account';
+                    errorBox.textContent = (err.message === 'unauthorized')
+                        ? 'Invalid admin username or password.'
+                        : 'Network error: ' + err.message;
+                    errorBox.style.display = 'block';
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm unblock';
                 });
         }
 
-        setTimeout(() => location.reload(), 5000);
+        document.getElementById('unblock-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'unblock-modal') closeUnblockModal();
+        });
     </script>
 </body>
 </html>
@@ -1255,8 +1444,10 @@ def monitor_dashboard():
         db_online = False
 
     logs = dedupe_logs_by_session(logs)
+    username_map = get_username_map()
     for log in logs:
         log['action'] = derive_action_label(log)
+        log['username'] = username_map.get(log.get('user_id')) or ('Guest' if log.get('user_id') is None else f"#{log.get('user_id')}")
 
     stats = {'clean': 0, 'tier1': 0, 'tier2': 0, 'tier3': 0}
     for log in logs:

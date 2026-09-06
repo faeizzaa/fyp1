@@ -270,9 +270,29 @@
                 if (zone && seatId && sessionId) {
                     fetch(`${API_URL}/seats/${zone}/confirm`, {
                         method: "POST",
+                        credentials: "include",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
-                    }).catch(() => {});
+                    })
+                    .then(res => {
+                        if (!res.ok) {
+                            console.error("Seat confirm failed:", res.status);
+                        }
+                        return res.json().catch(() => ({}));
+                    })
+                    .then(data => {
+                        if (!data.success) {
+                            console.error("Seat was not marked as sold:", data);
+                        }
+                        alert("Payment authorized successfully! Preparing your booking details...");
+                        window.location.href = 'success.html';
+                    })
+                    .catch(err => {
+                        console.error("Seat confirm request failed:", err);
+                        alert("Payment authorized successfully! Preparing your booking details...");
+                        window.location.href = 'success.html';
+                    });
+                    return;
                 }
 
                 alert("Payment authorized successfully! Preparing your booking details...");
