@@ -772,8 +772,8 @@ DASHBOARD_HTML = """
 
         body {
             font-family: -apple-system, 'Segoe UI', Roboto, Tahoma, Geneva, Verdana, sans-serif;
-            background: #f6f8fa;
-            color: #1a1f36;
+            background: #0a1826;
+            color: #eef2f7;
             min-height: 100vh;
         }
 
@@ -784,8 +784,8 @@ DASHBOARD_HTML = """
             position: fixed;
             top: 0; left: 0; bottom: 0;
             width: 232px;
-            background: #ffffff;
-            border-right: 1px solid #e3e8ee;
+            background: #0d1f33;
+            border-right: 1px solid rgba(255,255,255,0.06);
             padding: 22px 16px;
             display: flex;
             flex-direction: column;
@@ -796,25 +796,25 @@ DASHBOARD_HTML = """
             gap: 10px;
             padding: 0 8px 20px;
             margin-bottom: 8px;
-            border-bottom: 1px solid #e3e8ee;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
         .sidebar-brand .logo-sq {
             width: 30px; height: 30px;
-            background: #6c5ce7;
+            background: #4fc3f7;
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: 800; font-size: 14px;
+            color: #06131f; font-weight: 800; font-size: 14px;
             flex-shrink: 0;
         }
-        .sidebar-brand .brand-text { font-weight: 700; font-size: 0.95rem; color: #1a1f36; }
-        .sidebar-brand .brand-text span { display: block; font-size: 0.68rem; font-weight: 600; color: #8792a2; letter-spacing: 0.5px; }
+        .sidebar-brand .brand-text { font-weight: 700; font-size: 0.95rem; color: #eef2f7; }
+        .sidebar-brand .brand-text span { display: block; font-size: 0.66rem; font-weight: 600; color: #5f7690; letter-spacing: 0.5px; }
 
         .nav-group { margin-top: 18px; }
         .nav-label {
             font-size: 0.68rem;
             font-weight: 700;
             letter-spacing: 0.6px;
-            color: #a3acba;
+            color: #46617e;
             padding: 0 10px;
             margin-bottom: 6px;
             text-transform: uppercase;
@@ -827,16 +827,16 @@ DASHBOARD_HTML = """
             border-radius: 6px;
             font-size: 0.85rem;
             font-weight: 600;
-            color: #4a5568;
+            color: #a8bcd4;
             margin-bottom: 2px;
         }
-        .nav-link:hover { background: #f6f8fa; }
+        .nav-link:hover { background: rgba(255,255,255,0.05); color: #eef2f7; }
         .nav-link .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; }
 
         .sidebar-footer {
             margin-top: auto;
             padding-top: 16px;
-            border-top: 1px solid #e3e8ee;
+            border-top: 1px solid rgba(255,255,255,0.06);
         }
         .live-badge {
             display: inline-flex;
@@ -845,110 +845,135 @@ DASHBOARD_HTML = """
             font-size: 0.72rem;
             font-weight: 700;
             letter-spacing: 0.3px;
-            color: #1a9e5c;
-            background: #e9f9f0;
+            color: #34d399;
+            background: rgba(52,211,153,0.12);
             padding: 4px 10px;
             border-radius: 20px;
         }
         .live-dot {
             width: 6px; height: 6px; border-radius: 50%;
-            background: #1a9e5c;
-            box-shadow: 0 0 0 0 rgba(26,158,92,0.5);
+            background: #34d399;
             animation: pulse 1.6s infinite;
         }
         @keyframes pulse {
-            0%   { box-shadow: 0 0 0 0 rgba(26,158,92,0.45); }
-            70%  { box-shadow: 0 0 0 6px rgba(26,158,92,0); }
-            100% { box-shadow: 0 0 0 0 rgba(26,158,92,0); }
+            0%   { box-shadow: 0 0 0 0 rgba(52,211,153,0.45); }
+            70%  { box-shadow: 0 0 0 6px rgba(52,211,153,0); }
+            100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
         }
-        .sidebar-footer .auto-refresh { display: block; font-size: 0.72rem; color: #a3acba; margin-top: 8px; }
+        .sidebar-footer .auto-refresh { display: block; font-size: 0.72rem; color: #46617e; margin-top: 8px; }
 
         /* ===== MAIN ===== */
         .main {
             margin-left: 232px;
-            padding: 28px 36px 60px;
+            padding: 32px 40px 60px;
         }
 
         .topbar {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
-        h1 { font-size: 1.3rem; font-weight: 700; color: #1a1f36; }
-        .subtitle { color: #697386; margin-bottom: 22px; font-size: 0.86rem; }
+        h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.4px; color: #ffffff; }
+        .subtitle { color: #7d93ad; margin-bottom: 28px; font-size: 0.92rem; }
 
         .refresh-btn {
-            background: #ffffff;
-            color: #4a5568;
-            border: 1px solid #d3d9e3;
-            padding: 7px 16px;
-            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            color: #cdd6e4;
+            border: 1px solid rgba(255,255,255,0.14);
+            padding: 8px 18px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             font-size: 0.82rem;
             font-family: inherit;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
-        .refresh-btn:hover { background: #f6f8fa; border-color: #b9c1cf; }
-        .auto-refresh { color: #a3acba; font-size: 0.78rem; margin-left: 10px; }
+        .refresh-btn:hover { background: rgba(255,255,255,0.1); }
+        .auto-refresh { color: #5f7690; font-size: 0.78rem; margin-left: 10px; }
 
         .spike-alert {
-            background: #fff2f0;
-            border: 1px solid #ffd6cf;
-            border-left: 3px solid #e5484d;
-            border-radius: 8px;
-            padding: 13px 18px;
+            background: rgba(229,72,77,0.12);
+            border: 1px solid rgba(229,72,77,0.35);
+            border-left: 3px solid #f04f56;
+            border-radius: 10px;
+            padding: 14px 20px;
             margin: 18px 0;
             display: flex;
             align-items: center;
             gap: 12px;
         }
         .spike-alert-icon { font-size: 1.2rem; }
-        .spike-alert-text strong { color: #c02b30; font-size: 0.9rem; display: block; margin-bottom: 2px; }
-        .spike-alert-text span { color: #8a4a48; font-size: 0.8rem; }
+        .spike-alert-text strong { color: #ff8a80; font-size: 0.9rem; display: block; margin-bottom: 2px; }
+        .spike-alert-text span { color: #d99a97; font-size: 0.8rem; }
 
         .spike-baseline {
-            color: #8792a2;
-            font-size: 0.8rem;
-            margin: 16px 0;
+            color: #5f7690;
+            font-size: 0.82rem;
+            margin: 16px 0 20px;
         }
 
-        /* ===== KPI CARDS ===== */
+        /* ===== KPI PILLS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 28px;
+            gap: 22px;
+            margin-bottom: 32px;
+            margin-top: 10px;
         }
-        .stat-card {
-            background: #ffffff;
-            border: 1px solid #e3e8ee;
-            border-radius: 10px;
-            padding: 18px 20px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        .stat-pill {
+            position: relative;
+            border-radius: 46px;
+            padding: 16px 22px 16px 60px;
+            min-height: 64px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         }
-        .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-        .stat-icon {
-            width: 30px; height: 30px;
-            border-radius: 7px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.85rem;
+        .stat-pill .icon-badge {
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: #0a1826;
+            border: 3px solid rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
         }
-        .stat-value { font-size: 1.7rem; font-weight: 700; color: #1a1f36; }
-        .stat-label { color: #8792a2; font-size: 0.76rem; margin-top: 2px; font-weight: 600; }
+        .stat-value { font-size: 1.55rem; font-weight: 800; color: #ffffff; line-height: 1.1; }
+        .stat-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            margin-top: 3px;
+        }
 
-        .stat-card.clean .stat-icon { background: #e9f9f0; color: #1a9e5c; }
-        .stat-card.tier1 .stat-icon { background: #fff7e0; color: #b78103; }
-        .stat-card.tier2 .stat-icon { background: #fff0e3; color: #c2560a; }
-        .stat-card.tier3 .stat-icon { background: #fff0ef; color: #c02b30; }
+        .stat-pill.clean { background: linear-gradient(135deg, #0e9f6e, #0a7a55); }
+        .stat-pill.clean .icon-badge { color: #0e9f6e; }
+        .stat-pill.clean .stat-label { color: #c7f5e3; }
+
+        .stat-pill.tier1 { background: linear-gradient(135deg, #d69e2e, #a97b1c); }
+        .stat-pill.tier1 .icon-badge { color: #d69e2e; }
+        .stat-pill.tier1 .stat-label { color: #ffecc2; }
+
+        .stat-pill.tier2 { background: linear-gradient(135deg, #dd6b20, #b1530f); }
+        .stat-pill.tier2 .icon-badge { color: #dd6b20; }
+        .stat-pill.tier2 .stat-label { color: #ffdcc2; }
+
+        .stat-pill.tier3 { background: linear-gradient(135deg, #e53e4d, #b32333); }
+        .stat-pill.tier3 .icon-badge { color: #e53e4d; }
+        .stat-pill.tier3 .stat-label { color: #ffd0d4; }
 
         /* ===== SECTION PANELS ===== */
         .panel {
-            background: #ffffff;
-            border: 1px solid #e3e8ee;
-            border-radius: 10px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            background: #102338;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
             margin-bottom: 26px;
             overflow: hidden;
         }
@@ -957,97 +982,97 @@ DASHBOARD_HTML = """
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 16px 20px;
-            border-bottom: 1px solid #eef1f5;
+            padding: 16px 22px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
         }
-        .panel-header .panel-title { font-size: 0.95rem; font-weight: 700; color: #1a1f36; }
-        .panel-header .panel-count { color: #a3acba; font-weight: 500; }
-        .panel-body { padding: 18px 20px; }
+        .panel-header .panel-title { font-size: 0.98rem; font-weight: 700; color: #ffffff; }
+        .panel-header .panel-count { color: #5f7690; font-weight: 500; }
+        .panel-body { padding: 20px 22px; }
 
         .db-badge {
             font-size: 10.5px;
             font-weight: 700;
-            background: #e9f9f0;
-            color: #1a9e5c;
-            border: 1px solid #cdf0dc;
-            padding: 3px 10px;
+            background: rgba(52,211,153,0.12);
+            color: #34d399;
+            border: 1px solid rgba(52,211,153,0.3);
+            padding: 4px 11px;
             border-radius: 20px;
         }
-        .db-badge.offline { background: #fff0ef; color: #c02b30; border-color: #ffd6cf; }
+        .db-badge.offline { background: rgba(240,79,86,0.12); color: #f87171; border-color: rgba(240,79,86,0.3); }
 
         /* ===== SESSION / BLOCKED CARD GRIDS ===== */
         .sessions-grid, .blocked-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 10px;
+            gap: 12px;
         }
         .session-card {
-            background: #f9fafb;
-            border: 1px solid #e3e8ee;
-            border-radius: 8px;
-            padding: 13px 15px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 14px 16px;
         }
         .session-id {
             font-family: 'SF Mono', 'Courier New', monospace;
             font-size: 0.82rem;
-            color: #1a1f36;
+            color: #eef2f7;
             font-weight: 600;
         }
-        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; font-size: 0.76rem; color: #697386; }
+        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; font-size: 0.76rem; color: #8ea3bf; }
         .session-meta .ip-badge {
-            background: #eef1f5;
-            padding: 2px 7px;
+            background: rgba(255,255,255,0.06);
+            padding: 2px 8px;
             border-radius: 4px;
             font-family: 'Courier New', monospace;
-            color: #4a5568;
+            color: #a8bcd4;
         }
-        .session-meta .pattern-mini { color: #b78103; font-family: 'Courier New', monospace; font-weight: 600; }
+        .session-meta .pattern-mini { color: #ffcb6b; font-family: 'Courier New', monospace; font-weight: 600; }
 
         .blocked-card {
-            background: #fffaf9;
-            border: 1px solid #f4d9d6;
-            border-left: 3px solid #e5484d;
-            border-radius: 8px;
-            padding: 14px 16px;
+            background: rgba(229,72,77,0.08);
+            border: 1px solid rgba(229,72,77,0.25);
+            border-left: 3px solid #f04f56;
+            border-radius: 10px;
+            padding: 15px 17px;
         }
         .blocked-card .blocked-username {
             font-family: 'Courier New', monospace;
-            color: #c02b30;
+            color: #ff8a80;
             font-weight: 700;
             font-size: 0.9rem;
         }
         .blocked-card .blocked-meta {
-            margin-top: 9px;
+            margin-top: 10px;
             font-size: 0.76rem;
-            color: #697386;
+            color: #b6c3d4;
             display: flex;
             flex-direction: column;
             gap: 3px;
         }
-        .blocked-card .blocked-meta strong { color: #4a5568; }
+        .blocked-card .blocked-meta strong { color: #eef2f7; }
         .unblock-btn {
-            margin-top: 11px;
+            margin-top: 12px;
             width: 100%;
-            background: #ffffff;
-            color: #1a9e5c;
-            border: 1px solid #cdf0dc;
-            padding: 6px;
-            border-radius: 6px;
+            background: rgba(52,211,153,0.1);
+            color: #34d399;
+            border: 1px solid rgba(52,211,153,0.3);
+            padding: 7px;
+            border-radius: 7px;
             cursor: pointer;
             font-size: 0.75rem;
             font-weight: 700;
             font-family: inherit;
         }
-        .unblock-btn:hover { background: #e9f9f0; }
+        .unblock-btn:hover { background: rgba(52,211,153,0.2); }
         .unblock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .empty-state {
             text-align: center;
-            padding: 34px;
-            color: #a3acba;
-            background: #f9fafb;
-            border: 1px dashed #e3e8ee;
-            border-radius: 8px;
+            padding: 36px;
+            color: #46617e;
+            background: rgba(255,255,255,0.02);
+            border: 1px dashed rgba(255,255,255,0.1);
+            border-radius: 10px;
             font-size: 0.86rem;
         }
 
@@ -1056,127 +1081,137 @@ DASHBOARD_HTML = """
             overflow-x: auto;
             overflow-y: hidden;
             -webkit-overflow-scrolling: touch;
-            border-top: 1px solid #eef1f5;
+            border-top: 1px solid rgba(255,255,255,0.06);
         }
         .table-wrap::-webkit-scrollbar { height: 10px; }
-        .table-wrap::-webkit-scrollbar-track { background: #f9fafb; }
-        .table-wrap::-webkit-scrollbar-thumb { background: #d3d9e3; border-radius: 5px; }
-        .table-wrap::-webkit-scrollbar-thumb:hover { background: #b9c1cf; }
+        .table-wrap::-webkit-scrollbar-track { background: #0d1f33; }
+        .table-wrap::-webkit-scrollbar-thumb { background: #2c4258; border-radius: 5px; }
+        .table-wrap::-webkit-scrollbar-thumb:hover { background: #3a5771; }
         table { width: 100%; min-width: 1150px; border-collapse: collapse; }
-        th, td { padding: 11px 16px; text-align: left; white-space: nowrap; }
+        th, td { padding: 12px 16px; text-align: left; white-space: nowrap; }
         td.reasons-cell { white-space: normal; min-width: 220px; }
         th {
-            background: #f9fafb;
-            color: #8792a2;
+            background: rgba(255,255,255,0.03);
+            color: #5f7690;
             font-weight: 700;
             font-size: 0.7rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 1px solid #eef1f5;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
             position: sticky;
             top: 0;
         }
-        td { border-bottom: 1px solid #f1f3f7; font-size: 0.84rem; color: #1a1f36; }
+        td { border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.84rem; color: #eef2f7; }
         tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover { background: #f9fafb; }
+        tbody tr:hover { background: rgba(255,255,255,0.025); }
 
         .pattern-code {
             font-family: 'Courier New', monospace;
-            background: #f1f3f7;
-            padding: 2px 7px;
+            background: rgba(255,255,255,0.06);
+            padding: 2px 8px;
             border-radius: 4px;
             font-size: 0.78rem;
-            color: #4a5568;
+            color: #a8bcd4;
         }
 
         .tier-badge {
             display: inline-block;
-            padding: 3px 10px;
+            padding: 4px 11px;
             border-radius: 20px;
             font-weight: 700;
             font-size: 0.7rem;
         }
-        .tier-0 { background: #e9f9f0; color: #1a9e5c; }
-        .tier-1 { background: #fff7e0; color: #b78103; }
-        .tier-2 { background: #fff0e3; color: #c2560a; }
-        .tier-3 { background: #fff0ef; color: #c02b30; }
+        .tier-0 { background: rgba(14,159,110,0.15); color: #34d399; }
+        .tier-1 { background: rgba(214,158,46,0.15); color: #ffcb6b; }
+        .tier-2 { background: rgba(221,107,32,0.15); color: #ffa261; }
+        .tier-3 { background: rgba(229,62,77,0.15); color: #ff8a80; }
 
-        .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #8792a2; }
-        .username-cell { font-weight: 700; color: #1a1f36; font-size: 0.84rem; }
-        .action-cell { font-size: 0.78rem; color: #6c5ce7; font-weight: 600; }
-        .reasons-cell { font-size: 0.78rem; color: #8792a2; max-width: 260px; }
+        .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #7d93ad; }
+        .username-cell { font-weight: 700; color: #ffffff; font-size: 0.84rem; }
+        .action-cell { font-size: 0.78rem; color: #82b1ff; font-weight: 600; }
+        .reasons-cell { font-size: 0.78rem; color: #7d93ad; max-width: 260px; }
 
-        /* ===== MODAL (light) ===== */
+        /* ===== MODAL (dark) ===== */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(26, 31, 54, 0.45);
+            background: rgba(3, 8, 15, 0.72);
             z-index: 999;
             align-items: center;
             justify-content: center;
         }
         .modal-overlay.open { display: flex; }
         .modal-box {
-            background: #ffffff;
-            border: 1px solid #e3e8ee;
-            border-radius: 12px;
-            padding: 24px 26px;
+            background: #102338;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 26px 28px;
             width: 100%;
             max-width: 340px;
-            box-shadow: 0 20px 50px rgba(26,31,54,0.18);
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
         }
-        .modal-box h3 { margin: 0 0 4px; font-size: 1rem; color: #1a1f36; }
-        .modal-box p { margin: 0 0 16px; font-size: 0.8rem; color: #697386; }
+        .modal-box h3 { margin: 0 0 4px; font-size: 1rem; color: #ffffff; }
+        .modal-box p { margin: 0 0 16px; font-size: 0.8rem; color: #8ea3bf; }
         .modal-box label {
             display: block;
             font-size: 0.75rem;
             font-weight: 600;
-            color: #4a5568;
+            color: #a8bcd4;
             margin-bottom: 4px;
             margin-top: 12px;
         }
         .modal-box input {
             width: 100%;
-            background: #f9fafb;
-            border: 1px solid #d3d9e3;
-            border-radius: 6px;
-            padding: 9px 10px;
-            color: #1a1f36;
+            background: #0a1826;
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 7px;
+            padding: 9px 11px;
+            color: #eef2f7;
             font-size: 0.85rem;
             box-sizing: border-box;
         }
-        .modal-box input:focus { outline: none; border-color: #6c5ce7; background: #fff; }
+        .modal-box input:focus { outline: none; border-color: #4fc3f7; }
         .modal-error {
             display: none;
             margin-top: 10px;
-            background: #fff0ef;
-            border: 1px solid #ffd6cf;
-            color: #c02b30;
+            background: rgba(229,72,77,0.12);
+            border: 1px solid rgba(229,72,77,0.35);
+            color: #ff8a80;
             font-size: 0.78rem;
-            padding: 8px 10px;
-            border-radius: 6px;
+            padding: 9px 11px;
+            border-radius: 7px;
         }
         .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
         .modal-actions button {
             flex: 1;
-            padding: 9px;
-            border-radius: 6px;
+            padding: 10px;
+            border-radius: 7px;
             border: none;
             font-weight: 700;
             font-size: 0.82rem;
             cursor: pointer;
             font-family: inherit;
         }
-        .modal-btn-cancel { background: #f1f3f7; color: #4a5568; }
-        .modal-btn-cancel:hover { background: #e3e8ee; }
-        .modal-btn-confirm { background: #1a9e5c; color: #fff; }
-        .modal-btn-confirm:hover { background: #158249; }
+        .modal-btn-cancel { background: rgba(255,255,255,0.08); color: #cdd6e4; }
+        .modal-btn-cancel:hover { background: rgba(255,255,255,0.14); }
+        .modal-btn-confirm { background: #0e9f6e; color: #ffffff; }
+        .modal-btn-confirm:hover { background: #0c8a5f; }
         .modal-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        @media (max-width: 1100px) {
+            .two-col { grid-template-columns: 1fr; }
+        }
         @media (max-width: 900px) {
             .sidebar { display: none; }
             .main { margin-left: 0; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -1204,7 +1239,7 @@ DASHBOARD_HTML = """
         <div class="topbar">
             <div>
                 <h1>Bot Detection Monitor</h1>
-                <p class="subtitle">Session tracking &amp; account moderation</p>
+                <p class="subtitle">Real-time session tracking &amp; account moderation for Tickago</p>
             </div>
             <div>
                 <button class="refresh-btn" onclick="location.reload()">Refresh</button>
@@ -1227,86 +1262,86 @@ DASHBOARD_HTML = """
         {% endif %}
 
         <div class="stats-grid">
-            <div class="stat-card clean">
-                <div class="stat-top"><div class="stat-icon">✓</div></div>
+            <div class="stat-pill clean">
+                <div class="icon-badge">✓</div>
                 <div class="stat-value">{{ stats.clean }}</div>
-                <div class="stat-label">CLEAN SESSIONS</div>
+                <div class="stat-label">Clean Sessions</div>
             </div>
-            <div class="stat-card tier1">
-                <div class="stat-top"><div class="stat-icon">⏱</div></div>
+            <div class="stat-pill tier1">
+                <div class="icon-badge">⏱</div>
                 <div class="stat-value">{{ stats.tier1 }}</div>
-                <div class="stat-label">TIER 1 — DELAY</div>
+                <div class="stat-label">Tier 1 — Delay</div>
             </div>
-            <div class="stat-card tier2">
-                <div class="stat-top"><div class="stat-icon">◈</div></div>
+            <div class="stat-pill tier2">
+                <div class="icon-badge">◈</div>
                 <div class="stat-value">{{ stats.tier2 }}</div>
-                <div class="stat-label">TIER 2 — CAPTCHA</div>
+                <div class="stat-label">Tier 2 — CAPTCHA</div>
             </div>
-            <div class="stat-card tier3">
-                <div class="stat-top"><div class="stat-icon">⛔</div></div>
+            <div class="stat-pill tier3">
+                <div class="icon-badge">⛔</div>
                 <div class="stat-value">{{ stats.tier3 }}</div>
-                <div class="stat-label">TIER 3 — BLOCKED</div>
+                <div class="stat-label">Tier 3 — Blocked</div>
             </div>
         </div>
 
         <div id="sessions"></div>
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Active Sessions <span class="panel-count">({{ active_count }})</span></span>
-                <span class="db-badge {{ '' if db_online else 'offline' }}">
-                    {{ 'SUPABASE CONNECTED' if db_online else 'DB OFFLINE — IN-MEMORY' }}
-                </span>
-            </div>
-            <div class="panel-body">
-                {% if active_sessions %}
-                <div class="sessions-grid">
-                    {% for sid, session in active_sessions.items() %}
-                    <div class="session-card">
-                        <div class="session-id">{{ sid[:16] }}...</div>
-                        <div class="session-meta">
-                            <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
-                            <span>{{ "%.1f" | format(session.age) }}s ago</span>
-                            <span>mouse: {{ session.mouse_movements }}</span>
-                        </div>
-                        <div class="session-meta">
-                            <span>pages: {{ session.pages_visited | join(', ') or 'none' }}</span>
-                            <span class="pattern-mini">{{ session.actions | join('') or 'N/A' }}</span>
-                        </div>
-                    </div>
-                    {% endfor %}
+        <div class="two-col">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Active Sessions <span class="panel-count">({{ active_count }})</span></span>
+                    <span class="db-badge {{ '' if db_online else 'offline' }}">
+                        {{ 'SUPABASE CONNECTED' if db_online else 'DB OFFLINE' }}
+                    </span>
                 </div>
-                {% else %}
-                <div class="empty-state">No active sessions</div>
-                {% endif %}
+                <div class="panel-body">
+                    {% if active_sessions %}
+                    <div class="sessions-grid">
+                        {% for sid, session in active_sessions.items() %}
+                        <div class="session-card">
+                            <div class="session-id">{{ sid[:16] }}...</div>
+                            <div class="session-meta">
+                                <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
+                                <span>{{ "%.1f" | format(session.age) }}s ago</span>
+                            </div>
+                            <div class="session-meta">
+                                <span>mouse: {{ session.mouse_movements }}</span>
+                                <span class="pattern-mini">{{ session.actions | join('') or 'N/A' }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">No active sessions</div>
+                    {% endif %}
+                </div>
             </div>
-        </div>
 
-        <div id="blocked"></div>
-        <div class="panel">
-            <div class="panel-header">
-                <span class="panel-title">Blocked Accounts <span class="panel-count">({{ blocked_accounts | length }})</span></span>
-            </div>
-            <div class="panel-body">
-                {% if blocked_accounts %}
-                <div class="blocked-grid">
-                    {% for user in blocked_accounts %}
-                    <div class="blocked-card" id="blocked-card-{{ user.id }}">
-                        <div class="blocked-username">{{ user.username }}</div>
-                        <div class="blocked-meta">
-                            <span><strong>Blocked at:</strong> {{ user.blocked_at or 'unknown' }}</span>
-                            <span><strong>Ghost tickets before block:</strong> {{ user.ghost_ticket_count or 0 }}</span>
-                            <span><strong>Account created:</strong> {{ user.created_at }}</span>
-                            <span><strong>Last known IP:</strong> {{ user.last_known_ip }}</span>
-                        </div>
-                        <button class="unblock-btn" onclick="openUnblockModal({{ user.id }}, '{{ user.username|e }}')" id="unblock-btn-{{ user.id }}">
-                            Unblock account
-                        </button>
-                    </div>
-                    {% endfor %}
+            <div id="blocked"></div>
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Blocked Accounts <span class="panel-count">({{ blocked_accounts | length }})</span></span>
                 </div>
-                {% else %}
-                <div class="empty-state">No blocked accounts</div>
-                {% endif %}
+                <div class="panel-body">
+                    {% if blocked_accounts %}
+                    <div class="blocked-grid">
+                        {% for user in blocked_accounts %}
+                        <div class="blocked-card" id="blocked-card-{{ user.id }}">
+                            <div class="blocked-username">{{ user.username }}</div>
+                            <div class="blocked-meta">
+                                <span><strong>Blocked:</strong> {{ user.blocked_at or 'unknown' }}</span>
+                                <span><strong>Ghost tickets:</strong> {{ user.ghost_ticket_count or 0 }}</span>
+                                <span><strong>Last IP:</strong> {{ user.last_known_ip }}</span>
+                            </div>
+                            <button class="unblock-btn" onclick="openUnblockModal({{ user.id }}, '{{ user.username|e }}')" id="unblock-btn-{{ user.id }}">
+                                Unblock account
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">No blocked accounts</div>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -1361,7 +1396,7 @@ DASHBOARD_HTML = """
                     {% if logs %}
                         {% for log in logs %}
                         <tr>
-                            <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#8792a2">{{ log.time }}</td>
+                            <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#5f7690">{{ log.time }}</td>
                             <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
                             <td class="username-cell">{{ log.username }}</td>
                             <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
