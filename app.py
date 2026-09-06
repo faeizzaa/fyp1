@@ -771,69 +771,133 @@ DASHBOARD_HTML = """
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #0f1115;
-            color: #e2e5ea;
-            padding: 32px 40px 60px;
+            font-family: -apple-system, 'Segoe UI', Roboto, Tahoma, Geneva, Verdana, sans-serif;
+            background: #f6f8fa;
+            color: #1a1f36;
             min-height: 100vh;
         }
 
-        .header-row {
+        a { text-decoration: none; color: inherit; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: 232px;
+            background: #ffffff;
+            border-right: 1px solid #e3e8ee;
+            padding: 22px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 4px;
+            gap: 10px;
+            padding: 0 8px 20px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #e3e8ee;
         }
+        .sidebar-brand .logo-sq {
+            width: 30px; height: 30px;
+            background: #6c5ce7;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 800; font-size: 14px;
+            flex-shrink: 0;
+        }
+        .sidebar-brand .brand-text { font-weight: 700; font-size: 0.95rem; color: #1a1f36; }
+        .sidebar-brand .brand-text span { display: block; font-size: 0.68rem; font-weight: 600; color: #8792a2; letter-spacing: 0.5px; }
 
-        h1 {
-            font-size: 1.4rem;
+        .nav-group { margin-top: 18px; }
+        .nav-label {
+            font-size: 0.68rem;
             font-weight: 700;
-            color: #f4f5f7;
+            letter-spacing: 0.6px;
+            color: #a3acba;
+            padding: 0 10px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
         }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 2px;
+        }
+        .nav-link:hover { background: #f6f8fa; }
+        .nav-link .nav-icon { font-size: 0.95rem; width: 18px; text-align: center; }
 
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 16px;
+            border-top: 1px solid #e3e8ee;
+        }
         .live-badge {
             display: inline-flex;
             align-items: center;
             gap: 6px;
             font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.4px;
-            color: #22c55e;
-            border: 1px solid #22c55e40;
-            background: #22c55e14;
-            padding: 3px 9px;
-            border-radius: 4px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: #1a9e5c;
+            background: #e9f9f0;
+            padding: 4px 10px;
+            border-radius: 20px;
         }
-
         .live-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #22c55e;
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #1a9e5c;
+            box-shadow: 0 0 0 0 rgba(26,158,92,0.5);
+            animation: pulse 1.6s infinite;
+        }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(26,158,92,0.45); }
+            70%  { box-shadow: 0 0 0 6px rgba(26,158,92,0); }
+            100% { box-shadow: 0 0 0 0 rgba(26,158,92,0); }
+        }
+        .sidebar-footer .auto-refresh { display: block; font-size: 0.72rem; color: #a3acba; margin-top: 8px; }
+
+        /* ===== MAIN ===== */
+        .main {
+            margin-left: 232px;
+            padding: 28px 36px 60px;
         }
 
-        .subtitle { color: #8b93a5; margin-bottom: 22px; font-size: 0.88rem; }
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        h1 { font-size: 1.3rem; font-weight: 700; color: #1a1f36; }
+        .subtitle { color: #697386; margin-bottom: 22px; font-size: 0.86rem; }
 
         .refresh-btn {
-            background: #6c5ce7;
-            color: #fff;
-            border: none;
-            padding: 8px 18px;
+            background: #ffffff;
+            color: #4a5568;
+            border: 1px solid #d3d9e3;
+            padding: 7px 16px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-family: inherit;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
-        .refresh-btn:hover { background: #5b4cc4; }
-
-        .auto-refresh { color: #6b7280; font-size: 0.8rem; margin-left: 12px; }
+        .refresh-btn:hover { background: #f6f8fa; border-color: #b9c1cf; }
+        .auto-refresh { color: #a3acba; font-size: 0.78rem; margin-left: 10px; }
 
         .spike-alert {
-            background: #7f1d1d20;
-            border: 1px solid #ef444460;
-            border-left: 3px solid #ef4444;
-            border-radius: 6px;
+            background: #fff2f0;
+            border: 1px solid #ffd6cf;
+            border-left: 3px solid #e5484d;
+            border-radius: 8px;
             padding: 13px 18px;
             margin: 18px 0;
             display: flex;
@@ -841,442 +905,485 @@ DASHBOARD_HTML = """
             gap: 12px;
         }
         .spike-alert-icon { font-size: 1.2rem; }
-        .spike-alert-text strong { color: #f87171; font-size: 0.92rem; display: block; margin-bottom: 2px; }
-        .spike-alert-text span { color: #9ca3af; font-size: 0.82rem; }
+        .spike-alert-text strong { color: #c02b30; font-size: 0.9rem; display: block; margin-bottom: 2px; }
+        .spike-alert-text span { color: #8a4a48; font-size: 0.8rem; }
 
         .spike-baseline {
-            color: #6b7280;
+            color: #8792a2;
             font-size: 0.8rem;
             margin: 16px 0;
         }
 
+        /* ===== KPI CARDS ===== */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 14px;
             margin-bottom: 28px;
         }
-
         .stat-card {
-            background: #171a21;
-            border: 1px solid #262b36;
-            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #e3e8ee;
+            border-radius: 10px;
             padding: 18px 20px;
-            border-left: 3px solid transparent;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
-        .stat-value { font-size: 2rem; font-weight: 700; }
-        .stat-label { color: #8b93a5; font-size: 0.78rem; margin-top: 4px; letter-spacing: 0.2px; }
+        .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .stat-icon {
+            width: 30px; height: 30px;
+            border-radius: 7px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.85rem;
+        }
+        .stat-value { font-size: 1.7rem; font-weight: 700; color: #1a1f36; }
+        .stat-label { color: #8792a2; font-size: 0.76rem; margin-top: 2px; font-weight: 600; }
 
-        .stat-card.clean { border-left-color: #22c55e; }
-        .stat-card.clean .stat-value { color: #22c55e; }
+        .stat-card.clean .stat-icon { background: #e9f9f0; color: #1a9e5c; }
+        .stat-card.tier1 .stat-icon { background: #fff7e0; color: #b78103; }
+        .stat-card.tier2 .stat-icon { background: #fff0e3; color: #c2560a; }
+        .stat-card.tier3 .stat-icon { background: #fff0ef; color: #c02b30; }
 
-        .stat-card.tier1 { border-left-color: #eab308; }
-        .stat-card.tier1 .stat-value { color: #eab308; }
-
-        .stat-card.tier2 { border-left-color: #f97316; }
-        .stat-card.tier2 .stat-value { color: #f97316; }
-
-        .stat-card.tier3 { border-left-color: #ef4444; }
-        .stat-card.tier3 .stat-value { color: #ef4444; }
-
-        .section-title {
+        /* ===== SECTION PANELS ===== */
+        .panel {
+            background: #ffffff;
+            border: 1px solid #e3e8ee;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            margin-bottom: 26px;
+            overflow: hidden;
+        }
+        .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin: 30px 0 12px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #f4f5f7;
+            padding: 16px 20px;
+            border-bottom: 1px solid #eef1f5;
         }
+        .panel-header .panel-title { font-size: 0.95rem; font-weight: 700; color: #1a1f36; }
+        .panel-header .panel-count { color: #a3acba; font-weight: 500; }
+        .panel-body { padding: 18px 20px; }
 
         .db-badge {
-            font-size: 11px;
-            font-weight: 600;
-            background: #22c55e14;
-            color: #22c55e;
-            border: 1px solid #22c55e40;
+            font-size: 10.5px;
+            font-weight: 700;
+            background: #e9f9f0;
+            color: #1a9e5c;
+            border: 1px solid #cdf0dc;
             padding: 3px 10px;
-            border-radius: 4px;
+            border-radius: 20px;
         }
-        .db-badge.offline { background: #ef444414; color: #f87171; border-color: #ef444440; }
+        .db-badge.offline { background: #fff0ef; color: #c02b30; border-color: #ffd6cf; }
 
-        .sessions-grid {
+        /* ===== SESSION / BLOCKED CARD GRIDS ===== */
+        .sessions-grid, .blocked-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 10px;
         }
         .session-card {
-            background: #171a21;
-            border: 1px solid #262b36;
+            background: #f9fafb;
+            border: 1px solid #e3e8ee;
             border-radius: 8px;
-            padding: 12px 15px;
+            padding: 13px 15px;
         }
-        .session-id { font-family: 'Courier New', monospace; color: #a29bfe; font-size: 0.83rem; font-weight: 600; }
-        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; font-size: 0.77rem; color: #8b93a5; }
+        .session-id {
+            font-family: 'SF Mono', 'Courier New', monospace;
+            font-size: 0.82rem;
+            color: #1a1f36;
+            font-weight: 600;
+        }
+        .session-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 7px; font-size: 0.76rem; color: #697386; }
         .session-meta .ip-badge {
-            background: #1f232c;
+            background: #eef1f5;
             padding: 2px 7px;
             border-radius: 4px;
             font-family: 'Courier New', monospace;
-            color: #c3c9d4;
+            color: #4a5568;
         }
-        .session-meta .pattern-mini { color: #eab308; font-family: 'Courier New', monospace; }
+        .session-meta .pattern-mini { color: #b78103; font-family: 'Courier New', monospace; font-weight: 600; }
 
-        .blocked-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 10px;
-        }
         .blocked-card {
-            background: #171a21;
-            border: 1px solid #262b36;
-            border-left: 3px solid #ef4444;
+            background: #fffaf9;
+            border: 1px solid #f4d9d6;
+            border-left: 3px solid #e5484d;
             border-radius: 8px;
             padding: 14px 16px;
         }
         .blocked-card .blocked-username {
             font-family: 'Courier New', monospace;
-            color: #f87171;
+            color: #c02b30;
             font-weight: 700;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
         }
         .blocked-card .blocked-meta {
             margin-top: 9px;
-            font-size: 0.77rem;
-            color: #8b93a5;
+            font-size: 0.76rem;
+            color: #697386;
             display: flex;
             flex-direction: column;
             gap: 3px;
         }
-        .blocked-card .blocked-meta strong { color: #c3c9d4; }
+        .blocked-card .blocked-meta strong { color: #4a5568; }
         .unblock-btn {
             margin-top: 11px;
             width: 100%;
-            background: transparent;
-            color: #22c55e;
-            border: 1px solid #22c55e50;
+            background: #ffffff;
+            color: #1a9e5c;
+            border: 1px solid #cdf0dc;
             padding: 6px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 0.75rem;
-            font-weight: 600;
+            font-weight: 700;
             font-family: inherit;
         }
-        .unblock-btn:hover { background: #22c55e14; }
+        .unblock-btn:hover { background: #e9f9f0; }
         .unblock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Re-authentication modal for the Unblock action - clicking
-           Unblock is not enough on its own; the admin must re-enter
-           credentials every time, rather than relying on the browser's
-           already-cached Basic Auth session from opening /monitor. */
+        .empty-state {
+            text-align: center;
+            padding: 34px;
+            color: #a3acba;
+            background: #f9fafb;
+            border: 1px dashed #e3e8ee;
+            border-radius: 8px;
+            font-size: 0.86rem;
+        }
+
+        /* ===== TABLE ===== */
+        .table-wrap {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            border-top: 1px solid #eef1f5;
+        }
+        .table-wrap::-webkit-scrollbar { height: 10px; }
+        .table-wrap::-webkit-scrollbar-track { background: #f9fafb; }
+        .table-wrap::-webkit-scrollbar-thumb { background: #d3d9e3; border-radius: 5px; }
+        .table-wrap::-webkit-scrollbar-thumb:hover { background: #b9c1cf; }
+        table { width: 100%; min-width: 1150px; border-collapse: collapse; }
+        th, td { padding: 11px 16px; text-align: left; white-space: nowrap; }
+        td.reasons-cell { white-space: normal; min-width: 220px; }
+        th {
+            background: #f9fafb;
+            color: #8792a2;
+            font-weight: 700;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #eef1f5;
+            position: sticky;
+            top: 0;
+        }
+        td { border-bottom: 1px solid #f1f3f7; font-size: 0.84rem; color: #1a1f36; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #f9fafb; }
+
+        .pattern-code {
+            font-family: 'Courier New', monospace;
+            background: #f1f3f7;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 0.78rem;
+            color: #4a5568;
+        }
+
+        .tier-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.7rem;
+        }
+        .tier-0 { background: #e9f9f0; color: #1a9e5c; }
+        .tier-1 { background: #fff7e0; color: #b78103; }
+        .tier-2 { background: #fff0e3; color: #c2560a; }
+        .tier-3 { background: #fff0ef; color: #c02b30; }
+
+        .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #8792a2; }
+        .username-cell { font-weight: 700; color: #1a1f36; font-size: 0.84rem; }
+        .action-cell { font-size: 0.78rem; color: #6c5ce7; font-weight: 600; }
+        .reasons-cell { font-size: 0.78rem; color: #8792a2; max-width: 260px; }
+
+        /* ===== MODAL (light) ===== */
         .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(10, 12, 16, 0.72);
+            background: rgba(26, 31, 54, 0.45);
             z-index: 999;
             align-items: center;
             justify-content: center;
         }
         .modal-overlay.open { display: flex; }
         .modal-box {
-            background: #171a21;
-            border: 1px solid #262b36;
-            border-radius: 10px;
+            background: #ffffff;
+            border: 1px solid #e3e8ee;
+            border-radius: 12px;
             padding: 24px 26px;
             width: 100%;
             max-width: 340px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 50px rgba(26,31,54,0.18);
         }
-        .modal-box h3 {
-            margin: 0 0 4px;
-            font-size: 1rem;
-            color: #f1f5f9;
-        }
-        .modal-box p {
-            margin: 0 0 16px;
-            font-size: 0.8rem;
-            color: #8b93a5;
-        }
+        .modal-box h3 { margin: 0 0 4px; font-size: 1rem; color: #1a1f36; }
+        .modal-box p { margin: 0 0 16px; font-size: 0.8rem; color: #697386; }
         .modal-box label {
             display: block;
             font-size: 0.75rem;
-            color: #8b93a5;
+            font-weight: 600;
+            color: #4a5568;
             margin-bottom: 4px;
             margin-top: 12px;
         }
         .modal-box input {
             width: 100%;
-            background: #0d0f14;
-            border: 1px solid #262b36;
+            background: #f9fafb;
+            border: 1px solid #d3d9e3;
             border-radius: 6px;
             padding: 9px 10px;
-            color: #e5e7eb;
+            color: #1a1f36;
             font-size: 0.85rem;
             box-sizing: border-box;
         }
-        .modal-box input:focus { outline: none; border-color: #6c5ce7; }
+        .modal-box input:focus { outline: none; border-color: #6c5ce7; background: #fff; }
         .modal-error {
             display: none;
             margin-top: 10px;
-            background: #3d1414;
-            border: 1px solid #ef4444;
-            color: #fca5a5;
+            background: #fff0ef;
+            border: 1px solid #ffd6cf;
+            color: #c02b30;
             font-size: 0.78rem;
             padding: 8px 10px;
             border-radius: 6px;
         }
-        .modal-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 18px;
-        }
+        .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
         .modal-actions button {
             flex: 1;
             padding: 9px;
             border-radius: 6px;
             border: none;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.82rem;
             cursor: pointer;
             font-family: inherit;
         }
-        .modal-btn-cancel { background: #262b36; color: #c3c9d4; }
-        .modal-btn-cancel:hover { background: #313746; }
-        .modal-btn-confirm { background: #22c55e; color: #0a0c10; }
-        .modal-btn-confirm:hover { background: #1ea34f; }
+        .modal-btn-cancel { background: #f1f3f7; color: #4a5568; }
+        .modal-btn-cancel:hover { background: #e3e8ee; }
+        .modal-btn-confirm { background: #1a9e5c; color: #fff; }
+        .modal-btn-confirm:hover { background: #158249; }
         .modal-btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .empty-state {
-            text-align: center;
-            padding: 34px;
-            color: #6b7280;
-            background: #171a21;
-            border: 1px dashed #262b36;
-            border-radius: 8px;
-            font-size: 0.88rem;
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
         }
-
-        .table-wrap {
-            background: #171a21;
-            border-radius: 8px;
-            border: 1px solid #262b36;
-            overflow-x: auto;
-            overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
-        }
-        .table-wrap::-webkit-scrollbar { height: 10px; }
-        .table-wrap::-webkit-scrollbar-track { background: #171a21; }
-        .table-wrap::-webkit-scrollbar-thumb { background: #333846; border-radius: 5px; }
-        .table-wrap::-webkit-scrollbar-thumb:hover { background: #454b5c; }
-        table { width: 100%; min-width: 1150px; border-collapse: collapse; }
-        th, td { padding: 10px 14px; text-align: left; white-space: nowrap; }
-        td.reasons-cell { white-space: normal; min-width: 220px; }
-        th {
-            background: #1c2029;
-            color: #8b93a5;
-            font-weight: 600;
-            font-size: 0.72rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid #262b36;
-        }
-        td { border-bottom: 1px solid #1e222b; font-size: 0.85rem; }
-        tbody tr:last-child td { border-bottom: none; }
-        tbody tr:hover { background: #1c2029; }
-
-        .pattern-code {
-            font-family: 'Courier New', monospace;
-            background: #1f232c;
-            padding: 2px 7px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #c3c9d4;
-        }
-
-        .tier-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-weight: 700;
-            font-size: 0.72rem;
-        }
-        .tier-0 { background: #22c55e1a; color: #22c55e; }
-        .tier-1 { background: #eab3081a; color: #eab308; }
-        .tier-2 { background: #f973161a; color: #f97316; }
-        .tier-3 { background: #ef44441a; color: #ef4444; }
-
-        .ip-cell { font-family: 'Courier New', monospace; font-size: 0.78rem; color: #8b93a5; }
-        .username-cell { font-weight: 600; color: #e5e7eb; font-size: 0.85rem; }
-        .action-cell { font-size: 0.78rem; color: #a29bfe; }
-        .reasons-cell { font-size: 0.78rem; color: #8b93a5; max-width: 260px; }
     </style>
 </head>
 <body>
-    <div class="header-row">
-        <h1>Tickago Admin — Monitor</h1>
-        <span class="live-badge"><span class="live-dot"></span>LIVE</span>
-    </div>
-    <p class="subtitle">Bot detection, session tracking &amp; account moderation</p>
-
-    <button class="refresh-btn" onclick="location.reload()">Refresh</button>
-    <span class="auto-refresh">auto-refresh every 5s</span>
-
-    {% if spike.is_spike %}
-    <div class="spike-alert">
-        <div class="spike-alert-icon">⚠</div>
-        <div class="spike-alert-text">
-            <strong>Traffic spike detected</strong>
-            <span>{{ spike.count }} evaluation requests in the last {{ spike.window_seconds }}s (baseline is well under {{ spike.threshold }}) — possible coordinated bot attack.</span>
+    <div class="sidebar">
+        <div class="sidebar-brand">
+            <div class="logo-sq">T</div>
+            <div class="brand-text">Tickago<span>ADMIN CONSOLE</span></div>
         </div>
-    </div>
-    {% else %}
-    <div class="spike-baseline">
-        Recent traffic: {{ spike.count }} request{{ '' if spike.count == 1 else 's' }} / {{ spike.window_seconds }}s &nbsp;(spike threshold: {{ spike.threshold }}+)
-    </div>
-    {% endif %}
-
-    <div class="stats-grid">
-        <div class="stat-card clean">
-            <div class="stat-value">{{ stats.clean }}</div>
-            <div class="stat-label">CLEAN SESSIONS</div>
+        <div class="nav-group">
+            <div class="nav-label">Monitor</div>
+            <a class="nav-link" href="#overview"><span class="nav-icon">◆</span>Overview</a>
+            <a class="nav-link" href="#sessions"><span class="nav-icon">◇</span>Active Sessions</a>
+            <a class="nav-link" href="#blocked"><span class="nav-icon">⛔</span>Blocked Accounts</a>
+            <a class="nav-link" href="#history"><span class="nav-icon">▤</span>Evaluation History</a>
         </div>
-        <div class="stat-card tier1">
-            <div class="stat-value">{{ stats.tier1 }}</div>
-            <div class="stat-label">TIER 1 — DELAY</div>
-        </div>
-        <div class="stat-card tier2">
-            <div class="stat-value">{{ stats.tier2 }}</div>
-            <div class="stat-label">TIER 2 — CAPTCHA</div>
-        </div>
-        <div class="stat-card tier3">
-            <div class="stat-value">{{ stats.tier3 }}</div>
-            <div class="stat-label">TIER 3 — BLOCKED</div>
+        <div class="sidebar-footer">
+            <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+            <span class="auto-refresh">Auto-refreshes every 5s</span>
         </div>
     </div>
 
-    <div class="section-title">
-        <span>Active Sessions ({{ active_count }})</span>
-        <span class="db-badge {{ '' if db_online else 'offline' }}">
-            {{ 'SUPABASE CONNECTED' if db_online else 'DB OFFLINE — IN-MEMORY' }}
-        </span>
-    </div>
-    {% if active_sessions %}
-    <div class="sessions-grid">
-        {% for sid, session in active_sessions.items() %}
-        <div class="session-card">
-            <div class="session-id">{{ sid[:16] }}...</div>
-            <div class="session-meta">
-                <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
-                <span>{{ "%.1f" | format(session.age) }}s ago</span>
-                <span>mouse: {{ session.mouse_movements }}</span>
+    <div class="main">
+        <div id="overview"></div>
+        <div class="topbar">
+            <div>
+                <h1>Bot Detection Monitor</h1>
+                <p class="subtitle">Session tracking &amp; account moderation</p>
             </div>
-            <div class="session-meta">
-                <span>pages: {{ session.pages_visited | join(', ') or 'none' }}</span>
-                <span class="pattern-mini">{{ session.actions | join('') or 'N/A' }}</span>
+            <div>
+                <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+                <span class="auto-refresh">auto-refresh every 5s</span>
             </div>
         </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">No active sessions</div>
-    {% endif %}
 
-    <div class="section-title">
-        <span>Blocked Accounts ({{ blocked_accounts | length }})</span>
-    </div>
-    {% if blocked_accounts %}
-    <div class="blocked-grid">
-        {% for user in blocked_accounts %}
-        <div class="blocked-card" id="blocked-card-{{ user.id }}">
-            <div class="blocked-username">{{ user.username }}</div>
-            <div class="blocked-meta">
-                <span><strong>Blocked at:</strong> {{ user.blocked_at or 'unknown' }}</span>
-                <span><strong>Ghost tickets before block:</strong> {{ user.ghost_ticket_count or 0 }}</span>
-                <span><strong>Account created:</strong> {{ user.created_at }}</span>
-                <span><strong>Last known IP:</strong> {{ user.last_known_ip }}</span>
-            </div>
-            <button class="unblock-btn" onclick="openUnblockModal({{ user.id }}, '{{ user.username|e }}')" id="unblock-btn-{{ user.id }}">
-                Unblock account
-            </button>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">No blocked accounts</div>
-    {% endif %}
-
-    <!-- Re-authentication modal: unblocking an account is a sensitive
-         action, so the admin must type credentials again here even
-         though the browser already has a cached Basic Auth session
-         for /monitor itself. -->
-    <div class="modal-overlay" id="unblock-modal">
-        <div class="modal-box">
-            <h3>Confirm account unblock</h3>
-            <p id="unblock-modal-target">Re-enter admin credentials to unblock this account.</p>
-
-            <label for="unblock-admin-user">Admin username</label>
-            <input type="text" id="unblock-admin-user" autocomplete="username">
-
-            <label for="unblock-admin-pass">Admin password</label>
-            <input type="password" id="unblock-admin-pass" autocomplete="current-password">
-
-            <div class="modal-error" id="unblock-modal-error">Invalid admin username or password.</div>
-
-            <div class="modal-actions">
-                <button class="modal-btn-cancel" onclick="closeUnblockModal()">Cancel</button>
-                <button class="modal-btn-confirm" id="unblock-modal-confirm" onclick="submitUnblock()">Confirm unblock</button>
+        {% if spike.is_spike %}
+        <div class="spike-alert">
+            <div class="spike-alert-icon">⚠</div>
+            <div class="spike-alert-text">
+                <strong>Traffic spike detected</strong>
+                <span>{{ spike.count }} evaluation requests in the last {{ spike.window_seconds }}s (baseline is well under {{ spike.threshold }}) — possible coordinated bot attack.</span>
             </div>
         </div>
-    </div>
+        {% else %}
+        <div class="spike-baseline">
+            Recent traffic: {{ spike.count }} request{{ '' if spike.count == 1 else 's' }} / {{ spike.window_seconds }}s &nbsp;(spike threshold: {{ spike.threshold }}+)
+        </div>
+        {% endif %}
 
-    <div class="section-title">
-        <span>Evaluation History ({{ logs | length }} records)</span>
-    </div>
-    <div class="table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th>Time</th>
-                <th>Session</th>
-                <th>Username</th>
-                <th>IP</th>
-                <th>Pattern</th>
-                <th>Duration</th>
-                <th>Qty</th>
-                <th>Mouse</th>
-                <th>Score</th>
-                <th>Tier</th>
-                <th>Action</th>
-                <th>Reasons</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% if logs %}
-                {% for log in logs %}
-                <tr>
-                    <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#8b93a5">{{ log.time }}</td>
-                    <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
-                    <td class="username-cell">{{ log.username }}</td>
-                    <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
-                    <td><span class="pattern-code">{{ log.pattern }}</span></td>
-                    <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
-                    <td>{{ log.quantity }}</td>
-                    <td>{{ log.mouse_movements }}</td>
-                    <td><strong>{{ log.score }}</strong></td>
-                    <td><span class="tier-badge tier-{{ log.tier }}">TIER {{ log.tier }}</span></td>
-                    <td class="action-cell">{{ log.action }}</td>
-                    <td class="reasons-cell">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
-                </tr>
-                {% endfor %}
-            {% else %}
-                <tr>
-                    <td colspan="12" class="empty-state">No evaluations yet. Run a bot to see data.</td>
-                </tr>
-            {% endif %}
-        </tbody>
-    </table>
+        <div class="stats-grid">
+            <div class="stat-card clean">
+                <div class="stat-top"><div class="stat-icon">✓</div></div>
+                <div class="stat-value">{{ stats.clean }}</div>
+                <div class="stat-label">CLEAN SESSIONS</div>
+            </div>
+            <div class="stat-card tier1">
+                <div class="stat-top"><div class="stat-icon">⏱</div></div>
+                <div class="stat-value">{{ stats.tier1 }}</div>
+                <div class="stat-label">TIER 1 — DELAY</div>
+            </div>
+            <div class="stat-card tier2">
+                <div class="stat-top"><div class="stat-icon">◈</div></div>
+                <div class="stat-value">{{ stats.tier2 }}</div>
+                <div class="stat-label">TIER 2 — CAPTCHA</div>
+            </div>
+            <div class="stat-card tier3">
+                <div class="stat-top"><div class="stat-icon">⛔</div></div>
+                <div class="stat-value">{{ stats.tier3 }}</div>
+                <div class="stat-label">TIER 3 — BLOCKED</div>
+            </div>
+        </div>
+
+        <div id="sessions"></div>
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Active Sessions <span class="panel-count">({{ active_count }})</span></span>
+                <span class="db-badge {{ '' if db_online else 'offline' }}">
+                    {{ 'SUPABASE CONNECTED' if db_online else 'DB OFFLINE — IN-MEMORY' }}
+                </span>
+            </div>
+            <div class="panel-body">
+                {% if active_sessions %}
+                <div class="sessions-grid">
+                    {% for sid, session in active_sessions.items() %}
+                    <div class="session-card">
+                        <div class="session-id">{{ sid[:16] }}...</div>
+                        <div class="session-meta">
+                            <span class="ip-badge">{{ session.get('ip', 'unknown') }}</span>
+                            <span>{{ "%.1f" | format(session.age) }}s ago</span>
+                            <span>mouse: {{ session.mouse_movements }}</span>
+                        </div>
+                        <div class="session-meta">
+                            <span>pages: {{ session.pages_visited | join(', ') or 'none' }}</span>
+                            <span class="pattern-mini">{{ session.actions | join('') or 'N/A' }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">No active sessions</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="blocked"></div>
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Blocked Accounts <span class="panel-count">({{ blocked_accounts | length }})</span></span>
+            </div>
+            <div class="panel-body">
+                {% if blocked_accounts %}
+                <div class="blocked-grid">
+                    {% for user in blocked_accounts %}
+                    <div class="blocked-card" id="blocked-card-{{ user.id }}">
+                        <div class="blocked-username">{{ user.username }}</div>
+                        <div class="blocked-meta">
+                            <span><strong>Blocked at:</strong> {{ user.blocked_at or 'unknown' }}</span>
+                            <span><strong>Ghost tickets before block:</strong> {{ user.ghost_ticket_count or 0 }}</span>
+                            <span><strong>Account created:</strong> {{ user.created_at }}</span>
+                            <span><strong>Last known IP:</strong> {{ user.last_known_ip }}</span>
+                        </div>
+                        <button class="unblock-btn" onclick="openUnblockModal({{ user.id }}, '{{ user.username|e }}')" id="unblock-btn-{{ user.id }}">
+                            Unblock account
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="empty-state">No blocked accounts</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Re-authentication modal: unblocking an account is a sensitive
+             action, so the admin must type credentials again here even
+             though the browser already has a cached Basic Auth session
+             for /monitor itself. -->
+        <div class="modal-overlay" id="unblock-modal">
+            <div class="modal-box">
+                <h3>Confirm account unblock</h3>
+                <p id="unblock-modal-target">Re-enter admin credentials to unblock this account.</p>
+
+                <label for="unblock-admin-user">Admin username</label>
+                <input type="text" id="unblock-admin-user" autocomplete="username">
+
+                <label for="unblock-admin-pass">Admin password</label>
+                <input type="password" id="unblock-admin-pass" autocomplete="current-password">
+
+                <div class="modal-error" id="unblock-modal-error">Invalid admin username or password.</div>
+
+                <div class="modal-actions">
+                    <button class="modal-btn-cancel" onclick="closeUnblockModal()">Cancel</button>
+                    <button class="modal-btn-confirm" id="unblock-modal-confirm" onclick="submitUnblock()">Confirm unblock</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="history"></div>
+        <div class="panel">
+            <div class="panel-header">
+                <span class="panel-title">Evaluation History <span class="panel-count">({{ logs | length }} records)</span></span>
+            </div>
+            <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Session</th>
+                        <th>Username</th>
+                        <th>IP</th>
+                        <th>Pattern</th>
+                        <th>Duration</th>
+                        <th>Qty</th>
+                        <th>Mouse</th>
+                        <th>Score</th>
+                        <th>Tier</th>
+                        <th>Action</th>
+                        <th>Reasons</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if logs %}
+                        {% for log in logs %}
+                        <tr>
+                            <td style="font-family:'Courier New',monospace;font-size:0.78rem;color:#8792a2">{{ log.time }}</td>
+                            <td><code class="pattern-code">{{ log.session_id[:12] }}...</code></td>
+                            <td class="username-cell">{{ log.username }}</td>
+                            <td class="ip-cell">{{ log.get('ip', 'unknown') }}</td>
+                            <td><span class="pattern-code">{{ log.pattern }}</span></td>
+                            <td>{{ "%.1f" | format(log.duration / 1000) }}s</td>
+                            <td>{{ log.quantity }}</td>
+                            <td>{{ log.mouse_movements }}</td>
+                            <td><strong>{{ log.score }}</strong></td>
+                            <td><span class="tier-badge tier-{{ log.tier }}">TIER {{ log.tier }}</span></td>
+                            <td class="action-cell">{{ log.action }}</td>
+                            <td class="reasons-cell">{{ log.reasons | join(', ') if log.reasons is iterable and log.reasons is not string else log.reasons }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="12" class="empty-state">No evaluations yet. Run a bot to see data.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1320,11 +1427,6 @@ DASHBOARD_HTML = """
             confirmBtn.textContent = 'Verifying...';
             errorBox.style.display = 'none';
 
-            // Explicit Authorization header built from what was just typed
-            // into the modal - this deliberately does NOT rely on the
-            // browser's already-cached Basic Auth session for /monitor,
-            // so re-entering correct credentials is genuinely required
-            // for this specific action every time.
             const encoded = btoa(`${adminUser}:${adminPass}`);
 
             fetch(`/api/admin/unblock/${userId}`, {
@@ -1380,22 +1482,29 @@ def derive_action_label(log):
         level = parts[1].replace('L', '') if len(parts) > 1 else '?'
         passed = pattern.endswith('PASS')
         if passed:
-            return f"CAPTCHA passed (Level {level}) - sent to payment"
+            return f"CAPTCHA passed (Level {level}), sent to payment"
         elif tier >= 3:
-            return "Blocked - failed all 3 CAPTCHA levels"
+            return "Blocked, failed all 3 CAPTCHA levels"
         else:
-            return f"CAPTCHA failed (Level {level}) - escalated to Level {int(level) + 1}"
+            return f"CAPTCHA failed (Level {level}), escalated to Level {int(level) + 1}"
+
+    reasons = log.get('reasons') or []
+    if isinstance(reasons, str):
+        reasons = [reasons]
+    hit_purchase_cap = any('Per-account ticket limit' in r for r in reasons)
 
     if tier == 0:
         return "Clean"
     elif tier == 1:
         return "3s delay applied"
     elif tier == 2:
-        return "CAPTCHA challenge triggered"
+        if hit_purchase_cap:
+            return "CAPTCHA triggered, account ticket limit reached"
+        return "CAPTCHA triggered, suspicious behaviour"
     elif tier == 3:
         action = log.get('action')
         if action == 'blocked':
-            return "Account blocked (repeat offender)"
+            return "Blocked, repeat offender"
         elif action == 'ghost':
             return "Ghost ticket issued"
         else:
