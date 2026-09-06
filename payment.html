@@ -235,7 +235,8 @@
                 duration: totalDurationMs,
                 quantity: qtySelected,
                 qty_speed: parseInt(qtySpeed),
-                mouse_movements: mouseMoves
+                mouse_movements: mouseMoves,
+                cumulative_score: parseInt(localStorage.getItem('cumulative_score') || '0')
             })
         })
         .then(res => {

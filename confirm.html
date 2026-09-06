@@ -231,6 +231,7 @@
     switch(data.tier){
 
         case 1:
+            localStorage.setItem('cumulative_score', data.carry_forward || 0);
             alert("Tier 1 Detection\nArtificial delay applied. You will be redirected shortly.");
             showDelayBanner(3);
             setTimeout(() => { window.location.href = "payment.html"; }, 3000);

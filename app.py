@@ -1239,7 +1239,7 @@ DASHBOARD_HTML = """
             <div class="stat-pill tier3">
                 <div class="icon-badge">⛔</div>
                 <div class="stat-value">{{ stats.tier3 }}</div>
-                <div class="stat-label">Tier 3 — Ghost Ticker/Blocked</div>
+                <div class="stat-label">Tier 3 — Ghost Ticket/Blocked</div>
             </div>
         </div>
 
@@ -1525,21 +1525,24 @@ def derive_action_label(log):
 def dedupe_logs_by_session(logs):
     """/evaluate fires at two checkpoints per completed purchase - once
     from confirm.html and again from payment.html - so a single
-    transaction attempt can produce 2+ rows in evaluation_logs. This
-    collapses that down to one row per session_id for dashboard display.
-    Assumes `logs` is already ordered most-recent-first, so the first
-    row seen per session_id is the furthest-progressed checkpoint for
-    that attempt (e.g. the payment-stage entry over the confirm-only
-    one, if both exist)."""
-    seen = set()
-    deduped = []
+    transaction attempt can produce 2+ rows in evaluation_logs. Rather
+    than just keeping whichever row happened most recently (which can
+    silently hide an earlier Tier 1/2/3 flag if a later re-evaluation
+    came back cleaner), keep the row with the HIGHEST tier per
+    session_id - the worst thing that was ever detected for that
+    session is what the dashboard should show."""
+    best_by_session = {}
+    order = []
     for log in logs:
         sid = log.get('session_id')
-        if sid in seen:
-            continue
-        seen.add(sid)
-        deduped.append(log)
-    return deduped
+        if sid not in best_by_session:
+            best_by_session[sid] = log
+            order.append(sid)
+        else:
+            existing = best_by_session[sid]
+            if log.get('tier', 0) > existing.get('tier', 0):
+                best_by_session[sid] = log
+    return [best_by_session[sid] for sid in order]
 
 @app.route('/api/admin/unblock/<int:user_id>', methods=['POST'])
 @requires_admin_auth
@@ -1970,8 +1973,7 @@ def evaluate_session():
     print(f"   Tier            : {tier}")
     print(f"   Carry Forward   : {carry_forward}")
 
-    if score >= 100:
-        tier = 3
+    if tier == 3:
         print("TIER 3: Evaluating ghost-ticket vs hard-block escalation")
         if pattern and not bot_tree.search(pattern):
             bot_tree.insert(pattern)
@@ -1979,16 +1981,12 @@ def evaluate_session():
                 learned_patterns.append(pattern)
                 save_learned_patterns()
                 print(f"LEARNED NEW PATTERN: '{pattern}'")
-    elif score >= 60:
-        tier = 2
+    elif tier == 2:
         print("TIER 2: CAPTCHA required")
-    elif score >= 30:
-        tier = 1
+    elif tier == 1:
         print("TIER 1: Applying 3-second delay")
         time.sleep(3)
     else:
-        tier = 0
-        reasons.append("No suspicious activity")
         print("TIER 0: Clean session")
 
     # Per-account lifetime ticket cap: this one stays a hard rule (not a
