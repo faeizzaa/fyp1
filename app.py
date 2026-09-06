@@ -815,6 +815,20 @@ DASHBOARD_HTML = """
             margin-bottom: 6px;
         }
         h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.4px; color: #ffffff; }
+
+        .page-logo {
+            width: 54px;
+            height: 54px;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #4fc3f7, #6c5ce7);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            box-shadow: 0 6px 18px rgba(108,92,231,0.35);
+            margin-top: 2px;
+        }
         .subtitle { color: #7d93ad; margin-bottom: 28px; font-size: 0.92rem; }
 
         .refresh-btn {
@@ -1168,15 +1182,25 @@ DASHBOARD_HTML = """
     </style>
 </head>
 <body>
+    <nav style="background:#0f1115;padding:0 32px;height:62px;display:flex;align-items:center;justify-content:space-between;gap:10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,0.3);">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:34px;height:34px;background:#6c5ce7;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;">T</div>
+            <span style="color:#fff;font-size:1.1rem;font-weight:700;letter-spacing:-0.3px;">Ticka<span style="color:#a29bfe">go</span></span>
+        </div>
+        <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </nav>
+
     <div class="main">
         <div id="overview"></div>
-        <div class="topbar">
-            <div>
-                <h1>Bot Detection Monitor</h1>
-                <p class="subtitle">Real-time session tracking &amp; account moderation for Tickago</p>
+             <div class="topbar">
+            <div style="display:flex;align-items:flex-start;gap:16px;">
+                <div class="page-logo">🛡️</div>
+                <div>
+                    <h1>Bot Detection Monitor</h1>
+                    <p class="subtitle">Real-time session tracking &amp; account moderation for Tickago</p>
+                </div>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
-                <span class="live-badge"><span class="live-dot"></span>LIVE</span>
                 <button class="refresh-btn" onclick="location.reload()">Refresh</button>
                 <span class="auto-refresh">auto-refresh every 5s</span>
             </div>
