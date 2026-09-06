@@ -3,7 +3,7 @@ from bot_worker import run_single_bot
 TARGET_URL = "https://tickago.onrender.com/waitingroom.html"
 WINDOW_POSITION = (560, 50, 480, 800)
 
-USERNAME = "def"
+USERNAME = "123asd"
 PASSWORD = "TestPass123!"
 
 if __name__ == "__main__":
