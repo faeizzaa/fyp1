@@ -1504,7 +1504,7 @@ def derive_action_label(log):
     if tier == 0:
         return "Clean"
     elif tier == 1:
-        return "3s delay applied"
+        return "3s delay applied - proceed to payment"
     elif tier == 2:
         if hit_purchase_cap:
             return "CAPTCHA triggered, account ticket limit reached"
