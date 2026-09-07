@@ -1701,15 +1701,45 @@ def captcha_attempt():
     success = bool(data.get('success'))
     ip_address = get_client_ip()
 
+    # Captured BEFORE any session.clear() below, so the log entry for a
+    # freshly-blocked account still records who it was instead of
+    # falling back to "Guest" on the dashboard.
+    resolved_user_id = session.get('user_id')
+    action = 'none'
+    redirect_page = None
+
     if success:
         tier    = 0
         score   = 0
         reasons = [f"Passed CAPTCHA level {level} ({challenge_type})"]
     elif level >= 3:
-        # Failed the last, hardest level - this is the block/kick case.
+        # Failed the last, hardest level - failing 3 independent human-
+        # verification challenges (math, text, drag-gesture) is a much
+        # stronger signal than the behavioral heuristics in /evaluate,
+        # so this hard-blocks immediately rather than going through the
+        # ghost-ticket first-offense path. Previously this branch only
+        # logged a "Blocked" row without ever touching users.is_blocked -
+        # the account wasn't actually blocked, it just looked that way
+        # on the dashboard.
         tier    = 3
         score   = 100
         reasons = ["Blocked: failed all 3 CAPTCHA levels"]
+        action  = 'blocked'
+        redirect_page = 'error.html'
+
+        current_user = get_current_user()
+        if current_user:
+            resolved_user_id = current_user['id']
+            if supabase:
+                try:
+                    supabase.table("users").update({
+                        "is_blocked": True,
+                        "blocked_at": now_myt_iso()
+                    }).eq("id", current_user['id']).execute()
+                    print(f"[Auth] Blocked user_id={current_user['id']} ({current_user.get('username')}) - failed all 3 CAPTCHA levels")
+                except Exception as e:
+                    print(f"[DB] Failed to flag account as blocked after CAPTCHA failure: {e}")
+            session.clear()  # force re-login, same as the /evaluate hard-block path
     else:
         # Escalating but not yet blocked - still worth a mid-tier flag.
         tier    = 2
@@ -1732,13 +1762,14 @@ def captcha_attempt():
         'tier':            tier,
         'reasons':         reasons,
         'ip':              ip_address,
-        'user_id':         session.get('user_id')
+        'action':          action,
+        'user_id':         resolved_user_id
     }
     evaluation_logs.append(log_entry)
     save_logs()
     save_evaluation_to_db(log_entry)
 
-    response = make_response(jsonify({'status': 'logged', 'tier': tier}))
+    response = make_response(jsonify({'status': 'logged', 'tier': tier, 'redirect': redirect_page}))
     response.headers["ngrok-skip-browser-warning"] = "true"
     return response
 

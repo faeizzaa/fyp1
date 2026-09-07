@@ -471,7 +471,12 @@
         // SHARED RESULT HANDLER
         // ==========================================
         function handleCaptchaResult(type, success) {
-            logCaptchaAttempt(type, currentLevel, success);
+            if (currentLevel >= 3 && !success) {
+                // Final failure is handled below, which logs once and
+                // waits for the server's blocking confirmation.
+            } else {
+                logCaptchaAttempt(type, currentLevel, success);
+            }
 
             if (success) {
                 // /evaluate is stateless - it recomputes tier from the
@@ -487,15 +492,20 @@
             }
 
             if (currentLevel >= 3) {
-                // Failed the 3rd and final level - block/kick.
+                // Failed the 3rd and final level - block/kick. Wait for
+                // the server's confirmation (it just marked the account
+                // as blocked) before redirecting, rather than assuming.
                 showMessage('Too many failed attempts. Access denied.', 'error');
                 clearInterval(timerInterval);
-                setTimeout(() => {
+                logCaptchaAttempt(type, currentLevel, success).then(res => {
+                    return res && res.json ? res.json() : null;
+                }).then(data => {
+                    window.location.href = (data && data.redirect) || 'error.html';
+                }).catch(() => {
                     window.location.href = 'error.html';
-                }, 2000);
+                });
                 return;
             }
-
             showMessage(`Incorrect. Please try the verification below.`, 'error');
             setTimeout(() => showLevel(currentLevel + 1), 1200);
         }
