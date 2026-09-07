@@ -472,19 +472,11 @@
         // ==========================================
         function handleCaptchaResult(type, success) {
             if (currentLevel >= 3 && !success) {
-                // Final failure is handled below, which logs once and
-                // waits for the server's blocking confirmation.
             } else {
                 logCaptchaAttempt(type, currentLevel, success);
             }
 
             if (success) {
-                // /evaluate is stateless - it recomputes tier from the
-                // same pattern/quantity/mouse data every call, so
-                // payment.html's later /evaluate call would land on
-                // Tier 2 again and loop back here forever without this
-                // flag. Tier 3 still overrides this (see payment.html) -
-                // this only stops a REPEAT Tier 2 verdict.
                 localStorage.setItem('captcha_passed', 'true');
                 showMessage('✓ Verification successful!', 'success');
                 onVerificationSuccess(type);

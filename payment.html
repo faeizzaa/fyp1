@@ -264,6 +264,7 @@
             } else {
 
                 // Confirm seat as sold before going to success
+                // Confirm seat as sold before going to success
                 const zone = localStorage.getItem('selected_zone');
                 const seatId = localStorage.getItem('selected_seat_id');
                 const sessionId = localStorage.getItem('session_id');
@@ -275,29 +276,32 @@
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
                     })
-                    .then(res => {
-                        if (!res.ok) {
-                            console.error("Seat confirm failed:", res.status);
-                        }
-                        return res.json().catch(() => ({}));
-                    })
+                    .then(res => res.json().catch(() => ({})))
                     .then(data => {
                         if (!data.success) {
+                            // Seat was NOT actually marked as sold (e.g. session
+                            // mismatch, seat not found) - do NOT show a success
+                            // message or redirect to success.html, since that
+                            // would tell the buyer they got a ticket they don't
+                            // actually have on record.
                             console.error("Seat was not marked as sold:", data);
+                            alert("We couldn't confirm your seat (" + (data.error || "unknown reason") + "). Please contact support before assuming your purchase went through.");
+                            return;
                         }
                         alert("Payment authorized successfully! Preparing your booking details...");
                         window.location.href = 'success.html';
                     })
                     .catch(err => {
                         console.error("Seat confirm request failed:", err);
-                        alert("Payment authorized successfully! Preparing your booking details...");
-                        window.location.href = 'success.html';
+                        alert("There was a network problem confirming your seat (" + err + "). Please try again before assuming your purchase went through.");
                     });
                     return;
                 }
 
-                alert("Payment authorized successfully! Preparing your booking details...");
-                window.location.href = 'success.html';
+                // zone/seatId/sessionId were missing entirely - send the buyer
+                // back to reselect rather than pretending the purchase succeeded.
+                alert("Missing seat information - please return to seat selection and try again.");
+                window.location.href = 'select.html';
             }
 
         })

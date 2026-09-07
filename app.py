@@ -86,12 +86,7 @@ def requires_admin_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-# Render sits the app behind more than one internal proxy hop (confirmed
-# by seeing an internal-looking 10.x.x.x address show up instead of a
-# real public IP), so rather than guess the exact hop count with
-# ProxyFix's x_for=N, read X-Forwarded-For directly and take the FIRST
-# entry - by HTTP convention that's always the original client, no
-# matter how many internal hops were appended after it.
+
 def get_client_ip():
     xff = request.headers.get('X-Forwarded-For', '')
     if xff:
@@ -1701,9 +1696,7 @@ def captcha_attempt():
     success = bool(data.get('success'))
     ip_address = get_client_ip()
 
-    # Captured BEFORE any session.clear() below, so the log entry for a
-    # freshly-blocked account still records who it was instead of
-    # falling back to "Guest" on the dashboard.
+  
     resolved_user_id = session.get('user_id')
     action = 'none'
     redirect_page = None
@@ -1713,14 +1706,6 @@ def captcha_attempt():
         score   = 0
         reasons = [f"Passed CAPTCHA level {level} ({challenge_type})"]
     elif level >= 3:
-        # Failed the last, hardest level - failing 3 independent human-
-        # verification challenges (math, text, drag-gesture) is a much
-        # stronger signal than the behavioral heuristics in /evaluate,
-        # so this hard-blocks immediately rather than going through the
-        # ghost-ticket first-offense path. Previously this branch only
-        # logged a "Blocked" row without ever touching users.is_blocked -
-        # the account wasn't actually blocked, it just looked that way
-        # on the dashboard.
         tier    = 3
         score   = 100
         reasons = ["Blocked: failed all 3 CAPTCHA levels"]
@@ -2083,12 +2068,12 @@ def evaluate_session():
 
             if supabase and current_user:
                 try:
-                    resolved_user_id = current_user['id']  # pin it down before clear()
+                    resolved_user_id = current_user['id']  
                     supabase.table("users").update({"is_blocked": True, "blocked_at": now_myt_iso()}).eq("id", current_user['id']).execute()
                 except Exception as e:
                     print(f"[DB] Failed to flag account as blocked: {e}")
 
-            session.clear()  # force re-login (or rather, re-registration, since this account is now dead)
+            session.clear()  
         else:
             action = "ghost"
             redirect_page = "ghost_ticket.html"
