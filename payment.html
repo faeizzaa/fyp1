@@ -269,31 +269,30 @@
                 const seatId = localStorage.getItem('selected_seat_id');
                 const sessionId = localStorage.getItem('session_id');
 
-                if (zone && seatId && sessionId) {
-                    fetch(`${API_URL}/seats/${zone}/confirm`, {
-                        method: "POST",
-                        credentials: "include",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ seat_id: seatId, session_id: sessionId })
-                    })
-                    .then(res => res.json().catch(() => ({})))
-                    .then(data => {
-                        if (!data.success) {
-                            // Seat was NOT actually marked as sold (e.g. session
-                            // mismatch, seat not found) - do NOT show a success
-                            // message or redirect to success.html, since that
-                            // would tell the buyer they got a ticket they don't
-                            // actually have on record.
-                            console.error("Seat was not marked as sold:", data);
-                            alert("We couldn't confirm your seat (" + (data.error || "unknown reason") + "). Please contact support before assuming your purchase went through.");
+                  if (zone && seatId && sessionId) {
+                    const seatIds = seatId.split(",").map(s => s.trim()).filter(Boolean);
+
+                    Promise.all(seatIds.map(sid =>
+                        fetch(`${API_URL}/seats/${zone}/confirm`, {
+                            method: "POST",
+                            credentials: "include",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ seat_id: sid, session_id: sessionId })
+                        })
+                        .then(res => res.json().catch(() => ({})))
+                        .then(data => ({ sid, data }))
+                        .catch(err => ({ sid, data: { success: false, error: String(err) } }))
+                    ))
+                    .then(results => {
+                        const failed = results.filter(r => !r.data.success);
+                        if (failed.length > 0) {
+                            console.error("Some seats were not marked as sold:", failed);
+                            const failedIds = failed.map(f => f.sid).join(", ");
+                            alert("We couldn't confirm seat(s): " + failedIds + ". Please contact support before assuming your purchase went through.");
                             return;
                         }
                         alert("Payment authorized successfully! Preparing your booking details...");
                         window.location.href = 'success.html';
-                    })
-                    .catch(err => {
-                        console.error("Seat confirm request failed:", err);
-                        alert("There was a network problem confirming your seat (" + err + "). Please try again before assuming your purchase went through.");
                     });
                     return;
                 }
