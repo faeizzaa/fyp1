@@ -397,6 +397,40 @@ def count_tier3_hits_by_ip(ip_address):
         print(f"[DB] Failed to count Tier-3 hits for IP: {e}")
         return 0
 
+def rehydrate_seat_store_from_db():
+    """seat_store lives in memory and gets wiped to a fresh 'available'
+    grid on every process restart (see load_session_from_db's docstring
+    below for the same class of problem with `sessions`). Render can
+    recycle the instance mid-checkout without warning, silently losing
+    any active reservations even though they're already being mirrored
+    to Supabase via save_seat_to_db(). This rebuilds in-memory state
+    from that mirror on startup so a reservation/sale isn't lost just
+    because the process happened to restart."""
+    if not supabase:
+        return
+    try:
+        result = supabase.table("seat_store").select("*").execute()
+        restored = 0
+        for row in result.data or []:
+            zone = row.get("zone")
+            seat_id = row.get("seat_id")
+            status = row.get("status")
+            if zone not in seat_store or seat_id not in seat_store[zone]:
+                continue
+            # Only restore reserved/sold seats - "available" rows don't
+            # need to override the freshly-initialized default.
+            if status in ("reserved", "sold"):
+                seat_store[zone][seat_id] = {
+                    "status": status,
+                    "reserved_at": row.get("reserved_at"),
+                    "session_id": row.get("session_id")
+                }
+                restored += 1
+        if restored:
+            print(f"[Seat] Rehydrated {restored} reserved/sold seat(s) from Supabase.")
+    except Exception as e:
+        print(f"[DB] Failed to rehydrate seat_store: {e}")
+
 def load_session_from_db(session_id):
     """The in-memory `sessions` dict can be wiped by a process restart
     (Render's free tier can recycle the instance without it always
@@ -609,6 +643,7 @@ def init_seats():
 
 seat_store = init_seats()
 seat_lock = threading.Lock()
+rehydrate_seat_store_from_db()
 
 def release_expired_holds():
     while True:

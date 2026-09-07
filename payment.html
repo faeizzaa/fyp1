@@ -283,12 +283,12 @@
                         .then(data => ({ sid, data }))
                         .catch(err => ({ sid, data: { success: false, error: String(err) } }))
                     ))
-                    .then(results => {
+                        .then(results => {
                         const failed = results.filter(r => !r.data.success);
                         if (failed.length > 0) {
                             console.error("Some seats were not marked as sold:", failed);
-                            const failedIds = failed.map(f => f.sid).join(", ");
-                            alert("We couldn't confirm seat(s): " + failedIds + ". Please contact support before assuming your purchase went through.");
+                            const failedDetails = failed.map(f => `${f.sid} (${f.data.error || 'unknown reason'})`).join(", ");
+                            alert("We couldn't confirm seat(s): " + failedDetails + ". Please contact support before assuming your purchase went through.");
                             return;
                         }
                         alert("Payment authorized successfully! Preparing your booking details...");
